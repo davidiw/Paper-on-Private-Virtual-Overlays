@@ -95,37 +95,12 @@ members of the system without the regulation of a third party but lack the
 ability to allow users to centrally secure and manage their own subset of the
 systems.
 
-There are two mechanisms for message passing in a P2P overlay, iterative or
-recursive.  In iterative routing, a peer sending a packet will contact each
-successive member in a path directly until it find the destination node.  At
-which point, it sends the packet directly to the destinataion.  In recursive
-routing, messages are sent through the overlay via forwarding from one peer to
-the next until arriving at the destination.  Iterative routing can easily be
-secured using socket based security concepts such as TLS~\cite{tls} and
-DTLS~\cite{dtls}, because there is no distinction between point-to-point (PtP)
-and end-to-end (EtE) communication.  Whereas in recursive routing, EtE
-communication will be an application primitive and rendering TLS and DTLS not
-easily applicable.
-
-Another issue present in P2P systems is the handling of NATs.  In environments
-where there are NATs, iterative routing can be significantly more difficult to
-deploy, since each message sent may require multiple NAT traversals.  With an
-added layer of security, iterative routing can easily be too expensive to
-deploy.   Additionally, TURN or relay style NAT traversal presents issues
-similar to EtE in recursive routing, where each individual may authenticate
-itself with the relay, they will not ebe able to easily use TLS and DTLS to
-verify each other.
-
-Secured ETE does not increase the reliability of a structured
-overlay.  In a free-to-join system, malicious peers can easily intercept packets
-and throw them away or tamper with them rendering them useless.  To deal with
-this issue, each overlay node participate in a specific, secure EtE session,
-could maintain a routing table that contains a subset of those involved.  The
-approach would then require that the overlay support what is effectively a
-second overlay but without an abstraction.  Requiring that each node instance
-maintain multiple routing algorithms, state machines to handle fault tolerance,
-and a mechanism for using a distributed data store only for the entire pool and
-this subset.
+Distributed data store applications like Dynamo~\cite{dynamo} and
+BigTable~\cite{bigtable} have the ability to store data using a completely
+decentralized system.  Though these systems are highly scalable and fault
+tolerant, the software uses an untrusted overlay.  Therefore all instances
+should be run in a secure environment, whether that be in a single institution
+or across a largely distributed environment using a VPN.
 
 In this paper, we present a design and implementation of a system that attempts
 to balance the benefits of third party services with P2P infrastructures.
@@ -140,12 +115,21 @@ The components of our system follow:
 Public Key Infrastructure (PKI) that allows users to create their own secure
 systems relying on P2P overlays;
 \item an application layer security system similar to DTLS to provide secure
-EtE and PtP in recursive P2P overlays while transparently handling security
-concerns of relay NAT traversal;
+end-to-end (EtE) and point-to-point (PtP) in P2P overlays while transparently
+handling security concerns of relay NAT traversal;
 \item the bootstrapping of private P2P overlays using existing public overlays,
 because applying the concepts in this paper to a public free-to-join pool
 is non-trivial.
 \end{enumerate}
+
+Our approach provides an easy mechanism to create trusted overlays in
+constrained environments using a publicly available untrusted overlay.  This
+model allows developers to focus on the application not concerning themselves
+with the security of the system.  This approach also has benefits for system
+deployers, whereas insecure systems would require the deployment of a
+decentralized and scalable VPN as well as the overlay software.  Most
+importantly our model provides a clean abstraction, which should make porting
+applications sufficiently easy.
 
 The rest of this paper is organized as follows.  Section~\ref{structured_p2p}
 provides background on our and related work with emphasis on P2P systems.
@@ -158,56 +142,9 @@ Section~\ref{conclusions}.
 
 \section{Background}
 \label{background}
-In this section, we begin by discussing related works in the field of security
-in P2P applications and then move on to an overview of structured P2P systems.
-
-\subsection{Related Works}
-BitTorrent~\cite{bittorrent_security}, a P2P data sharing service,  supports
-stream encryption between peers sharing files.  The purpose of BitTorrent
-security is not to keep messages private but to obfuscate packets to prvent
-prevent traffic shapping due packet sniffing, thus BitTorrent security uses a
-weak stream cipher, RC4, and lacks peer authentication as symmetric keys are
-exchanged through an unauthenticated Diffie-Hellman process.
-
-Hamachi~\cite{hamachi} provides central group management and a security
-infrastructure through a web interface.  Their security system has gone through
-two revisions as documented in~\cite{hamachi_security}.  Initially peers learn
-of each other through Hamachi's central system, which leads to the creation of
-secure links.  In their original approach, they use a system similar to a Key
-Distribution Center (KDC), which requires that all security sessions initiate
-through Hamachi's central servers.  In the latest version, this model has been
-retained but with the addition of an external PKI, which avoids the
-man-in-the-middle attack but with has the additional cost of maintaining both
-an external CA and certificate revocation list (CRL).  Hamachi also supports
-STUN and TURN style NAT traversal though TURN, again, requires the use of
-Hamachi's own relay servers.  Because Hamachi is closed, it disables users from
-hosting their own infrastructures including session management and relay
-servers.
-
-Skype~\cite{skype} like P2PSIP allows for decentralized audio and video
-communication, though unlike P2PSIP Skype is well established and has millions
-of users and is also closed.  While Skype does not provide documentation
-detailing the security of its system, researchers~\cite{skype_auth,
-skype_overview} have discovered that Skype supports both EtE and PtP security.
-Though similar to Hamachi, Skype uses a KDC and does not let users setup their
-own systems.
-
-The RobotCA~\cite{robotca} provides an automated approach for decentralized
-PKI.  A RobotCAs receives request via e-mail, verifies that the sender's e-mail
-address and embedded PGP key match, signs the request, and mails it back to the
-sender.  RobotCAs are only as secure as the underlying e-mail infrastructure
-and provide no guarantees about the person beyond their ownership of an e-mail
-address.  A RobotCA does not provide features to limit the signing of
-certificates nor does it provide user-friendly or intuitive mechanisms for
-certificate revocation.
-
-\cite{one_ring} proposes the use of a universal overlay as a discovery plane for
-service overlay.  The argument is that as a participant of an overlay, you
-must support all services provided by that overlay such as multicast, DHT,
-or distributed search.  Our work has the same foundations as this proposal but
-takes the idea further by using the universal overlay for NAT traversal;
-the service overlays become limited access, private overlays; and we have
-a prototype implementation, which is reflected in our well-defined design.
+In this section, we begin by reviewing structured P2P overlays, followed by
+constraints that make the creation of secure and private P2P overlays
+difficult, wrapping up with related work.
 
 \subsection{Structured P2P Systems}
 \label{structured_p2p}
@@ -258,6 +195,98 @@ tolerance the data can be stored at other nodes nearby.  This sort of mapping
 and data storage is called a distributed hash table (DHT) and is a typical
 component of most structured P2P systems.
 
+\subsection{Constraints in Structured P2P Systems}
+\subsubsection{Communication Between Nodes}
+There are two mechanisms for message passing in a P2P overlay, iterative or
+recursive.  In iterative routing, a peer sending a packet will contact each
+successive member in a path directly until it find the destination node.  At
+which point, it sends the packet directly to the destinataion.  In recursive
+routing, messages are sent through the overlay via forwarding from one peer to
+the next until arriving at the destination.  Iterative routing can easily be
+secured using socket based security concepts such as TLS~\cite{tls} and
+DTLS~\cite{dtls}, because there is no distinction between PtP
+and EtE communication.  Whereas in recursive routing, EtE
+communication will be an application primitive and rendering TLS and DTLS not
+easily applicable.
+
+\subsubsection{Private and Secure Overlay Subsets}
+Secured ETE does not increase the reliability of a structured
+overlay.  In a free-to-join system, malicious peers can easily intercept packets
+and throw them away or tamper with them rendering them useless.  To deal with
+this issue, each overlay node participate in a specific, secure EtE session,
+could maintain a routing table that contains a subset of those involved.  The
+approach would then require that the overlay support what is effectively a
+second overlay but without an abstraction.  Requiring that each node instance
+maintain multiple routing algorithms, state machines to handle fault tolerance,
+and a mechanism for using a distributed data store only for the entire pool and
+this subset.
+
+\subsubsection{NATs}
+Another issue present in P2P systems is the handling of NATs.  In environments
+where there are NATs, iterative routing can be significantly more difficult to
+deploy, since each message sent may require multiple NAT traversals.  With an
+added layer of security, iterative routing can easily be too expensive to
+deploy.   Additionally, TURN or relay style NAT traversal presents issues
+similar to EtE in recursive routing, where each individual may authenticate
+itself with the relay, they will not ebe able to easily use TLS and DTLS to
+verify each other.
+
+\subsection{Related Works}
+BitTorrent~\cite{bittorrent_security}, a P2P data sharing service,  supports
+stream encryption between peers sharing files.  The purpose of BitTorrent
+security is not to keep messages private but to obfuscate packets to prvent
+prevent traffic shapping due packet sniffing, thus BitTorrent security uses a
+weak stream cipher, RC4, and lacks peer authentication as symmetric keys are
+exchanged through an unauthenticated Diffie-Hellman process.
+
+Hamachi~\cite{hamachi} provides central group management and a security
+infrastructure through a web interface.  Their security system has gone through
+two revisions as documented in~\cite{hamachi_security}.  Initially peers learn
+of each other through Hamachi's central system, which leads to the creation of
+secure links.  In their original approach, they use a system similar to a Key
+Distribution Center (KDC), which requires that all security sessions initiate
+through Hamachi's central servers.  In the latest version, this model has been
+retained but with the addition of an external PKI, which avoids the
+man-in-the-middle attack but with has the additional cost of maintaining both
+an external CA and certificate revocation list (CRL).  Hamachi also supports
+STUN and TURN style NAT traversal though TURN, again, requires the use of
+Hamachi's own relay servers.  Because Hamachi is closed, it disables users from
+hosting their own infrastructures including session management and relay
+servers.
+
+Skype~\cite{skype} like P2PSIP allows for decentralized audio and video
+communication, though unlike P2PSIP Skype is well established and has millions
+of users and is also closed.  While Skype does not provide documentation
+detailing the security of its system, researchers~\cite{skype_auth,
+skype_overview} have discovered that Skype supports both EtE and PtP security.
+Though similar to Hamachi, Skype uses a KDC and does not let users setup their
+own systems.
+
+The RobotCA~\cite{robotca} provides an automated approach for decentralized
+PKI.  A RobotCAs receives request via e-mail, verifies that the sender's e-mail
+address and embedded PGP key match, signs the request, and mails it back to the
+sender.  RobotCAs are only as secure as the underlying e-mail infrastructure
+and provide no guarantees about the person beyond their ownership of an e-mail
+address.  A RobotCA does not provide features to limit the signing of
+certificates nor does it provide user-friendly or intuitive mechanisms for
+certificate revocation.
+
+\cite{one_ring} proposes the use of a universal overlay as a discovery plane for
+service overlay.  The argument is that as a participant of an overlay, you
+must support all services provided by that overlay such as multicast, DHT,
+or distributed search.  Our work has the same foundations as this proposal but
+takes the idea further by using the universal overlay for NAT traversal;
+the service overlays become limited access, private overlays; and we have
+a prototype implementation, which is reflected in our well-defined design.
+
+Distributed data store applications like~\cite{dynamo, bigtable} require that
+all machines have symmetric connectivity additionally like~\cite{past} suggest
+the use of a third party application to ensure trust amongst all overlay
+participants.  This is an example use case that is explicitly targeted by our
+system on the presumption that there are not sufficiently easy to use
+decentralized VPN software applications~\cite{nsdi10} and even if there
+were it is undesirable to have additional setup requirements.
+
 \section{Bootstrapping Secure and Private Overlays}
 \label{contributions}
 In this section, we explain the individual components of our contribution.  We
@@ -278,10 +307,11 @@ as DTLS can be applied though it must support being used without a socket.  The
 problem then becomes how to deal with identity.  In this section, we discuss how
 to bind security protocols and a certificate model to an overlay system.
 
-The key to our approach is treating EtE and PtP traffic identically, thus all
-messages are datagrams that are sent over abstracted senders and receivers, as
-illustrated in Figure~\ref{fig:senders_receivers}.  This allows us to use secure
-tunnels over these links with no application changes.
+The key to our approach is abstracting the communication layer making EtE and
+PtP traffic appear identical, thus all messages are datagrams that are sent
+over abstracted senders and receivers, as illustrated in
+Figure~\ref{fig:senders_receivers}.  This allows us to use secure tunnels over
+these links with no application changes.
 
 \begin{figure}[ht]
 \centering
@@ -298,6 +328,7 @@ our system, we bind the certificate to each individual node ID.  That way,
 a single certificate cannot be used for multiple peers in the overlay slowing
 down potential sybil attacks.
 
+\subsubsection{Forming the Connection}
 In overlay systems, a peer's connection manager requests to make an outgoing
 connection to another peer in the system.  This triggers the creation of a
 UDP or TCP socket, which are wrapped in the abstracted sender and receiver
@@ -312,8 +343,8 @@ Because EtE communication is application specific and not run-time, it requires
 a slightly different path.  For that purpose, we have a specific module that
 allows an application to request a secure EtE sender but will deal with the
 process of handling verification.  Once an application requests the sender, the
-module it passes a sender / receiver model to the security handler, which
-is the same as the PtPs.  Once the security initialization has completed, the
+module passes a sender / receiver model to the security handler, like the PtP
+process.  Once the security initialization has completed, the
 resulting sender / receiver is verified automatically for proper identity.
 If that succeeds, messages sent using the EtE sender will arrive at the remote
 party, decrypted and authenticated by the security handler, and delivered to the
@@ -326,6 +357,7 @@ mapping.  For example, an application could be aware that node ID X maps to user
 Y, therefore if a secure message coming from node ID Z says that it is user Y,
 an application should throw the packet away.
 
+\subsubsection{Datagram Constraints}
 Since UDP is connectionless, applications that use it can easily be victims of
 denial of service attacks.  This is because, packets sent to the receiver can
 have a spoofed source address unless the outgoing gateway prevents this from
