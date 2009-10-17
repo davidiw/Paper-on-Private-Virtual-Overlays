@@ -21,7 +21,8 @@
 \clubpenalty=10000
 
 \begin{document}
-\title{On the Use of Public Overlays to Bootstrap Secure, Private Overlays}
+\title{On the Design and Implementation of Secure, Private Overlays in
+Constrained Environments}
 
 \author{\IEEEauthorblockN{David Isaac Wolinsky and Renato Figueiredo} 
 \IEEEauthorblockA{Advanced Computing Information Systems Lab\\
@@ -39,18 +40,18 @@ transfer and streaming purposes in large part due to security concerns and
 difficulty bootstrapping in constrained environments.  The requirements for
 a P2P system in this context are structure, NAT traversal, point-to-point overlay
 security, and a distributed data store.  Using these mechanisms, we propose
-a novel way of creating secure, private overlays by uisng a public overlay
-to coordinate discovery, security, and NAT traversal.  Peers use the public
-overlay's distributed data store to discover each other and then use the
-public overlay to assist with NAT hole punching and as a relays providing STUN
-and TURN NAT traversal techniques.  Security is provided by a group web site
-available through either the Internet or the public overlay.  The group acts
-as a Public Key Infrastructure (PKI) relying on the use of a centrally
-managed web site providing an automated Certificate Authority (CA).  To
-qualify our design, we investigate different usage models and present a
-reference implementation providing a P2P VPN (Virtual Private Network).
-Additionally, we evaluate our contributions using both the P2P VPN in a live
-environment as well as event-based simulated time.
+a novel way of creating trusted overlays or overlays that are both secure and
+private by uisng a public overlay to coordinate discovery, security, and NAT
+traversal.  Peers use the public overlay's distributed data store to discover
+each other and then use the public overlay to assist with NAT hole punching
+and as a relays providing STUN and TURN NAT traversal techniques.  Security is
+provided by a group web site available through either the Internet or the
+public overlay.  The group acts as a Public Key Infrastructure (PKI) relying on
+the use of a centrally managed web site providing an automated Certificate
+Authority (CA).  To qualify our design, we investigate different usage models
+and present a reference implementation providing a P2P VPN (Virtual Private
+Network).  Additionally, we evaluate our contributions using both the P2P VPN
+in a live environment as well as event-based simulated time.
 \end{abstract}
 \section{Introduction}
 Structured P2P overlays are largely self-managing though there has been a slow
@@ -284,8 +285,21 @@ all machines have symmetric connectivity additionally like~\cite{past} suggest
 the use of a third party application to ensure trust amongst all overlay
 participants.  This is an example use case that is explicitly targeted by our
 system on the presumption that there are not sufficiently easy to use
-decentralized VPN software applications~\cite{nsdi10} and even if there
+decentralized VPN software applications~\cite{sc09, nsdi10} and even if there
 were it is undesirable to have additional setup requirements.
+
+While there has been much research~\cite{secure_routing} in securing overlays
+through decentralized mechanisms that attempt to prevent a collusion known as
+a sybil attack~\cite{sybil}, these mechanisms do not create private overlays.
+While one approch is mentioned does provide a natural lead into such
+environments which is the use of a pay to use service to mitigate the chances
+of an overlay attack, whereby the pay to use service uses a CA to sign node
+IDs.  The work does not describe how to efficiently implement such a system.
+Other similar research attempts to create trusted systems~\cite{stone, tor} but
+with anonymous members, though it could be reasonably argued these services are
+not applicable to small or medium business, which would prefer to have a private
+overlay.  None of the works discuss how to apply such models to constrained
+systems.
 
 \section{Bootstrapping Secure and Private Overlays}
 \label{contributions}
@@ -514,43 +528,116 @@ this section, we discuss 3), the steps involved in creating and connecting to a
 private overlay after the user has obtained group information and has connected
 to a public overlay.
 
-To connect with and create a private overlay, the application does the following
-steps:
+To connect with and create a private overlay, the application performs the
+following steps:
 \begin{enumerate}
 \setlength{\itemsep}{0pt}
 \setlength{\parskip}{0pt}
 \item connects with the public overlay
-\item queries the public overlay's DHT at the key ``private:groupname'', where
-groupname is the GroupVPN's name
+\item stores its node ID in the public overlay's DHT at the private group's key
+\item queries the public overlay's DHT at the private group's key
 \item start an instance of the private overlay with the well-known end points
 being those of the node IDs retrieved from the DHT
 \item upon forming a link with a member in the private overlay, the node follows
 the general approach for connecting to overlays
 \end{enumerate}
 
-%all future
-%communication optionally can take place using the private overlay
-%begin connecting with the node IDs retrieved from the DHT
-%values stored at the key are the public overlay node IDs of the private overlays active members.  The joining VPN software will
-%attempt to form private overlay bootstrap connections with members of this
-%list using the public overlay.  During this process, both peers verify each
-%other's authenticity and form a secure connection.  This connection is then used
-%to bootstrap direct connections with members of the private overlay.  The reason
-%why the public overlay node IDs are stored at the public overlay's DHT key and
-%for using private overlay bootstrap connections over the public overlay is to
-%support NAT traversal.  This model supports reusing Brunet's underlying NAT
-%traversal techniques.  As a member of a
-%private overlay, a VPN node can elect to store information relevant to the VPN in the
-%private overlay's DHT, relegating the public overlay for private overlay
-%discovery.  VPN traffic can then be kept to the private overlay only or
-%the public overlay can be used for relaying, when
-%direct connectivity is not possible, though this has not been looked into yet.
+The node should maintain membership in the public overlay when connected with
+the private overlay.  For two reasons, one so that other peers can discover the
+node while following the same set of steps and two for NAT traversal purposes
+discussed in the next paragraph.  Because the public overlay and its DHT
+provides a means for discovery, nodes must maintain there node ID in the public
+key's DHT.  A data inserter must constantly update the lease for the data
+object, otherwise the data will be removed.  This is because DHTs are
+implemented as leasing systems, whereby data objects are inserted with a time
+to live and removed upon expiration.
+
+During the formation of the private overlay, peers may find that they are
+unable to form direct connections with members of the private overlay.  For
+this, we have two solutions, 1) to use TURN NAT traveral as discussed
+in~\cite{nsdi10} and 2) use the public overlay as an extra routing massive TURN
+infrastructure.  The TURN NAT traversal technique has both peers connect with
+each others near neighbors in order to form a 2-hop connection with each other.
+The 2-hop route can either be enforced through a static route or through EtE
+greedy routing.  Due to the abstractions in the system, the public overlay can
+be treated as another mechanism to create PtP links, thus while packets may use
+EtE routing on the public overlay the private overlay nodes treat it as a PtP
+connection thus all communication is secured.  This approach can be further
+enhanced by allowing the private overlay to apply the TURN NAT traversal
+technique to the public overlay.  To do this, the private overlay must be
+capable of requesting a direct connection between the its node and the remote
+peer in the public overlay.  This would trigger the eventual creation of a 2-hop
+relay connection as presented in Figure~\ref{fig:overlay_relay}.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=2.75in]{vpn.png.eps}
+\caption{}
+\label{fig:overlay_relay}
+\end{figure}
+
+Another concern we address is the cost of having to maintain additional
+connections for each additional private overlay.  For this, we created a notion
+called paths, which multiplexes a single UDP or TCP socket to support multiple
+overlay nodes.  This model is supported because of the abstraction done on
+senders and receivers.  Thus a UDP or TCP connection can be easily wrapped 
+inside an abitrary packet, in this case, a pathing connection.  Upon sending
+a packet, the message is prepended with path information.  When the remote side
+receives a packet, it parses and removes this pathing information and relays it
+to the appropriate receiver, i.e., overlay node.  To validate this apparoch, we
+present the tradeoffs of this approach in Figure~\ref{fig:pathing_eval}, which
+presents the network latency verse memory costs for varying sized pathing systems.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=2.75in]{vpn.png.eps}
+\caption{}
+\label{fig:pathing_eval}
+\end{figure}
+
+When overlays are small and have significant churn, it is easy for data stored
+in the overlay to be easily lost.  This can be improved by implementing
+MapReduce~\cite{mapreduce} in the overlay.  In this model, each peer acts as a
+storage point for all data critical to itself.  If another peer cannot
+successfully find data stored at a specific key in the overlay, it can use
+MapReduce to broadcast the request to the entire overlay in an attempt to find
+the result.  We present a comparison of the time and network cost for both
+approaches in Figures~\ref{fig:mapreduce_time} and ~\ref{fig:mapreduce_network}.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=2.75in]{vpn.png.eps}
+\caption{}
+\label{fig:mapreduce_time}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=2.75in]{vpn.png.eps}
+\caption{}
+\label{fig:mapreduce_network}
+\end{figure}
 
 \section{Applications}
 \label{applications}
 \section{Evaluation}
 \label{evaluations}
 \section{Conclusion}
+In this paper, we presented a novel architecture for deploying secure, private
+overlays in constrained environments through the use of a public overlay.
+The public overlay at a minimum need only to support a distributed data store,
+like a DHT, so that peers of the private system can rendezvous with each other.
+For constrained environments, we used NAT traversal techniques like STUN and
+TURN with both private and public overlays supporting the relaying of packets.
+We evaluated the use of DTLS in our system and presented an improved CBC
+mode of operation for use in datagram systems that significantly speeded up our
+implementation.  To deal with excessive amounts of sockets, we introduced the
+notion of pathing, which showed that system resource consumption can be reduced
+with negligible effect on network performance.  Most importantly, we presented
+how a group infrastructure can be used as a user-friendly and intuitive
+mechanism to create and maintain trusted overlays.  For future work, we envision
+applying this approach to social networks and to establish multicast groups as
+done in~\cite{can}.
 \label{conclusions}
 \section*{Acknowledgment}
 
