@@ -3,13 +3,13 @@
 \graphicspath{{figs/}}
 %\DeclareGraphicsExtensions{.eps}
 \usepackage[cmex10]{amsmath}
-\interdisplaylinepenalty=2500
-\usepackage[tight,footnotesize]{subfigure}
+%\interdisplaylinepenalty=2500
+%\usepackage[tight,footnotesize]{subfigure}
 %\usepackage[caption=false]{caption}
-\usepackage[font=footnotesize]{subfig}
+%\usepackage[font=footnotesize]{subfig}
 %\usepackage[caption=false,font=footnotesize]{subfig}
-\usepackage{fixltx2e}
-\usepackage{stfloats}
+%\usepackage{fixltx2e}
+%\usepackage{stfloats}
 \usepackage{url}
 \hyphenation{op-tical net-works semi-conduc-tor}
 
@@ -112,12 +112,12 @@ The components of our system follow:
 \begin{enumerate}
 \setlength{\itemsep}{0pt}
 \setlength{\parskip}{0pt}
-\item a group web interface providing an automated front-end handler for a 
-Public Key Infrastructure (PKI) that allows users to create their own secure
-systems relying on P2P overlays;
 \item an application layer security system similar to DTLS to provide secure
 end-to-end (EtE) and point-to-point (PtP) in P2P overlays while transparently
 handling security concerns of relay NAT traversal;
+\item a group web interface providing an automated front-end handler for a 
+Public Key Infrastructure (PKI) that allows users to create their own secure
+systems relying on P2P overlays;
 \item the bootstrapping of private P2P overlays using existing public overlays,
 because applying the concepts in this paper to a public free-to-join pool
 is non-trivial.
@@ -127,8 +127,9 @@ Our approach provides an easy mechanism to create trusted overlays in
 constrained environments using a publicly available untrusted overlay.  This
 model allows developers to focus on the application not concerning themselves
 with the security of the system.  This approach also has benefits for system
-deployers, whereas insecure systems would require the deployment of a
-decentralized and scalable VPN as well as the overlay software.  Most
+deployers, whereas insecure systems would require modifying the overlay software
+to support security,  application level security, or the deployment of a
+decentralized and scalable VPN in addition to the overlay software.  Most
 importantly our model provides a clean abstraction, which should make porting
 applications sufficiently easy.
 
@@ -327,10 +328,13 @@ over abstracted senders and receivers, as illustrated in
 Figure~\ref{fig:senders_receivers}.  This allows us to use secure tunnels over
 these links with no application changes.
 
-\begin{figure}[ht]
+\begin{figure}[h]
 \centering
-\includegraphics[width=2.75in]{vpn.png.eps}
-\caption{}
+\includegraphics[width=3.25in]{secure_sender_stack_generic.png.eps}
+\caption{An example of the abstraction of senders and receivers using a EtE 
+secured chat application.  Each receiver and sender use the same abstracted
+model and thus the chat application requires only high-level changes, such
+as verifying the certificate used is Alice's and Bob's, to support security.}
 \label{fig:senders_receivers}
 \end{figure}
 
@@ -401,7 +405,7 @@ can start a new CBC state machine to decrypt the packet.  Table~\ref{tab:cbc_iss
 compares the overhead with the default implementation and with our revised
 version.
 
-\begin{table}[ht]
+\begin{table}[h]
 \setlength{\itemsep}{0pt}
 \setlength{\parskip}{0pt}
 \centering
@@ -410,7 +414,7 @@ version.
 DTLS CBC & 0 & 0 \\ \hline
 Our CBC & 0 & 0 \\ \hline
 \end{tabular}
-\caption{}
+\caption{CBC Issue -- In Progress.}
 \label{tab:cbc_issue}
 \end{table}
 
@@ -420,8 +424,8 @@ To establish trusted links, we use the PKI model, where a centralized CA signs
 all client certificates and clients can verify each other without CA interaction
 by using the CA's public certificate.  However, setting up, deploying, and then
 maintaining security credentials can easily become a non-negligible task,
-especially for non-experts.  Most PKI-enabled VPN systems require the use of
-command-line utilities and the setting up your own methods for securely
+especially for non-experts.  Most PKI-enabled systems require the use of
+command-line utilities and setting up your own methods for securely
 deploying certificates and policing users.  While this can be applied to an
 overlay, our experience with real deployments indicates that usability is very
 important, leading us to find a model with easy to user interfaces.
@@ -504,10 +508,10 @@ network modeler that reuses the same code base, i.e. routing tables and routing
 algorithms, as our structured P2P overlay software.  For latency estimation,
 we apply the MIT King data set~\cite{king_data}.
 
-\begin{figure}[ht]
+\begin{figure}[h]
 \centering
-\includegraphics[width=2.75in]{vpn.png.eps}
-\caption{}
+\includegraphics[width=2.75in]{in_progress.eps}
+\caption{Broadcast revocation.}
 \label{fig:broadcast_revocation}
 \end{figure}
 
@@ -569,10 +573,16 @@ capable of requesting a direct connection between the its node and the remote
 peer in the public overlay.  This would trigger the eventual creation of a 2-hop
 relay connection as presented in Figure~\ref{fig:overlay_relay}.
 
-\begin{figure}[ht]
+\begin{figure}[h]
 \centering
-\includegraphics[width=2.75in]{vpn.png.eps}
-\caption{}
+\includegraphics[width=2.75in]{relay.png.eps}
+\caption{Creating relays across the node address space, when direct
+connectivity is not possible.  Two members, 0000 and ABCD,  desire a direct
+connection but are unable to directly connect, perhaps due to NATs or firewalls.
+They exchange neighbor information through the overlay and connect to one of
+each other's neighbors, creating an overlap.  The overlap then becomes a
+relay path (represented by dashed lines), improving performance over routing
+across the entire overlay.}
 \label{fig:overlay_relay}
 \end{figure}
 
@@ -588,10 +598,10 @@ to the appropriate receiver, i.e., overlay node.  To validate this apparoch, we
 present the tradeoffs of this approach in Figure~\ref{fig:pathing_eval}, which
 presents the network latency verse memory costs for varying sized pathing systems.
 
-\begin{figure}[ht]
+\begin{figure}[h]
 \centering
-\includegraphics[width=2.75in]{vpn.png.eps}
-\caption{}
+\includegraphics[width=2.75in]{in_progress.eps}
+\caption{Pathing evalution.}
 \label{fig:pathing_eval}
 \end{figure}
 
@@ -602,27 +612,41 @@ storage point for all data critical to itself.  If another peer cannot
 successfully find data stored at a specific key in the overlay, it can use
 MapReduce to broadcast the request to the entire overlay in an attempt to find
 the result.  We present a comparison of the time and network cost for both
-approaches in Figures~\ref{fig:mapreduce_time} and ~\ref{fig:mapreduce_network}.
+approaches in Figure~\ref{fig:mapreduce_cost}.
 
-\begin{figure}[ht]
+\begin{figure}[h]
 \centering
-\includegraphics[width=2.75in]{vpn.png.eps}
-\caption{}
-\label{fig:mapreduce_time}
-\end{figure}
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=2.75in]{vpn.png.eps}
-\caption{}
-\label{fig:mapreduce_network}
+\includegraphics[width=2.75in]{in_progress.eps}
+\caption{MapReduce cost.}
+\label{fig:mapreduce_cost}
 \end{figure}
 
 \section{Applications}
 \label{applications}
+\subsection{Instant Messaging}
+\subsection{Data Sharing}
+\subsection{P2P VPNs}
 \section{Evaluation}
 \label{evaluations}
+In this section, we describe our prototype implementation of a secure, private
+overlay followed by evaluation to quantify network, memory, and CPU overheads.
+\subsection{Our Implementation -- Brunet}
+Our implementation is based upon Brunet~\cite{brunet}, which is a P2P system
+based upon the concepts introduced by Symphony~\cite{symphony}.  Thus it is a
+one-dimenesional ring, where peers connect with up to the four peers closest
+to themselves in both directions in the node ID space.  Shortcuts are based
+upon a harmonic distribution and the use of of proximity~\cite{hpdc08_0}.  The
+system supports both STUN based NAT traversal as well as a TURN-like system
+~\cite{nsdi10}.  The system uses a DHT as a distributed data store using a
+replication algorithm that spreads a single key, value pair throughout the ring
+as described in~\cite{pcgrid07}.  Additionally, the overlay has support for
+autonomic~\cite{wow} and manual creation of single-hop connections and double-hop
+through relaying when NATs prevent direct connections.  Furthermore, we have
+developed a P2P VPN on top of this stack, which has been used for over three
+years to support a ad hoc distributed grid~\cite{archer, gridappliance}.
+\subsection{Exploring Overheads}
 \section{Conclusion}
+\label{conclusions}
 In this paper, we presented a novel architecture for deploying secure, private
 overlays in constrained environments through the use of a public overlay.
 The public overlay at a minimum need only to support a distributed data store,
@@ -638,8 +662,7 @@ how a group infrastructure can be used as a user-friendly and intuitive
 mechanism to create and maintain trusted overlays.  For future work, we envision
 applying this approach to social networks and to establish multicast groups as
 done in~\cite{can}.
-\label{conclusions}
-\section*{Acknowledgment}
+%\section*{Acknowledgment}
 
 \bibliographystyle{IEEEtran}
 \bibliography{icdcs10}
