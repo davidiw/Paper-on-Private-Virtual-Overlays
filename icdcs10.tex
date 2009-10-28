@@ -124,14 +124,25 @@ is non-trivial.
 \end{enumerate}
 
 Our approach provides an easy mechanism to create trusted overlays in
-constrained environments using a publicly available untrusted overlay.  This
-model allows developers to focus on the application not concerning themselves
-with the security of the system.  This approach also has benefits for system
-deployers, whereas insecure systems would require modifying the overlay software
-to support security,  application level security, or the deployment of a
-decentralized and scalable VPN in addition to the overlay software.  Most
-importantly our model provides a clean abstraction, which should make porting
-applications sufficiently easy.
+constrained environments using a publicly available untrusted overlay as
+presented in Figure~\ref{fig:subrings}.  This model allows developers to focus
+on the application not concerning themselves with the security of the system.
+This approach also has benefits for system deployers, whereas insecure systems
+would require modifying the overlay software to support security, application
+level security, or the deployment of a decentralized and scalable VPN in
+addition to the overlay software.  Most importantly our model provides a clean
+abstraction, which should make porting applications sufficiently easy.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=3.25in]{subrings.eps}
+\caption{The use of a single, public overlay to bootstrap multiple, unique
+private overlays.  The center pool is the public pool.  Each node in the
+private pools has a corresponding partner in the public pool, the relationship
+is represented by a dashed line.  The relationship of a private node to a
+public can be many to 1.}
+\label{fig:subrings}
+\end{figure}
 
 The rest of this paper is organized as follows.  Section~\ref{structured_p2p}
 provides background on our and related work with emphasis on P2P systems.
@@ -575,14 +586,14 @@ relay connection as presented in Figure~\ref{fig:overlay_relay}.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=2.75in]{relay.png.eps}
+\includegraphics[width=2.75in]{subring_tunnel.eps}
 \caption{Creating relays across the node address space, when direct
-connectivity is not possible.  Two members, 0000 and ABCD,  desire a direct
-connection but are unable to directly connect, perhaps due to NATs or firewalls.
-They exchange neighbor information through the overlay and connect to one of
-each other's neighbors, creating an overlap.  The overlap then becomes a
-relay path (represented by dashed lines), improving performance over routing
-across the entire overlay.}
+connectivity is not possible.  Two members desire a direct connection but are
+unable to directly connect, perhaps due to NATs or firewalls.  They exchange
+private and public neighbor information through the private overlay and connect
+to one of each other's neighbors, creating an overlap.  The overlap then
+becomes a PtP relay path (represented by dashed lines), improving performance
+over routing across the entire overlay.}
 \label{fig:overlay_relay}
 \end{figure}
 
@@ -623,13 +634,65 @@ approaches in Figure~\ref{fig:mapreduce_cost}.
 
 \section{Applications}
 \label{applications}
-\subsection{Instant Messaging}
-\subsection{Data Sharing}
+In this section, we present applications and potential ways to configure them
+to use a private overlay.  The applications we investigate include instant
+message, VPNs, and social networks.  The key to all these applications is that
+users can easily host their own services and be discovered through the use of
+a NAT traversing, structured overlay network.
+
+\subsection{Chat Rooms}
+Chat rooms provide a platform for individuals with a common interest to find
+each other, group discussion, private chat, and data exchange.  One of the most
+popular chat systems for the Internet is IRC or Internet Relay Chat.  As
+described in~\cite{irc}, IRC supports a distributed tree system, where clients
+connect to a server and servers use a mixture of unicast and multicast to
+distribute messages.  The issues with IRC are documented by~\cite{irc_arch},
+namely, scalability due to all servers needing global knowledge, reliability due
+to connectivity issues between servers, and lack of privacy.  Private overlays
+could be extended to support the features of IRC and potentially deal with these
+inherent issues.  Each chat room would be mapped to a private overlay and the
+public overlay would be used as a directory to learn about available chat rooms
+and request access.  Structured overlays do not require global knowledge and can
+be configured to handle connectivity issues.  Additionally, IRC by default uses
+clear text messaging and even if security is used a server will be aware of the
+content of the message, two issues resolved by using PtP security in a private
+overlay chat room.  
+
 \subsection{P2P VPNs}
+As described in~\cite{nsdi10}, private overlays enable P2P VPNs.  The most
+common type of VPNs are centralized VPNs like OpenVPN, which requires that a
+centralized set of resources handle session initialization and communication.
+Another approach taken by Hamachi and many others is to maintain a central
+server for session initialization but allow communication to occur directly
+between peers and providing a central relay when NAT traversal fails.  Using
+a structured private overlay allows users to host their own VPNs, where each
+VPN end points is responsible for its own session initialization and
+communication.  The private overlay also provides mechanisms for handling
+failed NAT traversal attempts via relaying.
+
+\subsection{Social Networks}
+Social networks such as Facebook and MySpace provide an opportunity for users to
+indirectly via the Internet share information with friends, family, and peers.
+Most social network structures rely on the use hosted systems, where they become
+the keepers of user data, introducing a new trust relationship.  Private overlays
+can remove this third party making users the only owner of their data.  For this
+model, we propose that each user's profile be represented by a private overlay
+and that each of their friends become members of this overlay.  The overlay will
+consist of a secured DHT, where only writes made by the overlay owner are valid
+and only members of the overlay have access to the content stored in it.  In
+addition to bootstrapping the private overlays, the public overlay would be
+used as a directory for users to find and befriend each other.  For fault
+tolerance and scalability, each users will provide a copy of their profile
+locally, which will be distributed amongst the private overlay in a read-only
+DHT, therefore, allowing the users profile to be visible whether they are
+offline or online.  Each users social network would than consist of the
+accumulation of the individual private overlays and the public overlay.
+
 \section{Evaluation}
 \label{evaluations}
 In this section, we describe our prototype implementation of a secure, private
 overlay followed by evaluation to quantify network, memory, and CPU overheads.
+
 \subsection{Our Implementation -- Brunet}
 Our implementation is based upon Brunet~\cite{brunet}, which is a P2P system
 based upon the concepts introduced by Symphony~\cite{symphony}.  Thus it is a
@@ -644,7 +707,9 @@ autonomic~\cite{wow} and manual creation of single-hop connections and double-ho
 through relaying when NATs prevent direct connections.  Furthermore, we have
 developed a P2P VPN on top of this stack, which has been used for over three
 years to support a ad hoc distributed grid~\cite{archer, gridappliance}.
+
 \subsection{Exploring Overheads}
+
 \section{Conclusion}
 \label{conclusions}
 In this paper, we presented a novel architecture for deploying secure, private
