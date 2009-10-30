@@ -112,15 +112,15 @@ The components of our system follow:
 \begin{enumerate}
 \setlength{\itemsep}{0pt}
 \setlength{\parskip}{0pt}
-\item an application layer security system similar to DTLS to provide secure
+\item an application layer security system based upon DTLS to provide secure
 end-to-end (EtE) and point-to-point (PtP) in P2P overlays while transparently
 handling security concerns of relay NAT traversal;
-\item a group web interface providing an automated front-end handler for a 
-Public Key Infrastructure (PKI) that allows users to create their own secure
-systems relying on P2P overlays;
 \item the bootstrapping of private P2P overlays using existing public overlays,
 because applying the concepts in this paper to a public free-to-join pool
-is non-trivial.
+is non-trivial;
+\item a group web interface providing an automated front-end handler for a 
+Public Key Infrastructure (PKI) that allows users to create their own secure
+systems relying on P2P overlays.
 \end{enumerate}
 
 Our approach provides an easy mechanism to create trusted overlays in
@@ -430,6 +430,107 @@ Our CBC & 0 & 0 \\ \hline
 \label{tab:cbc_issue}
 \end{table}
 
+\subsection{Private Overlays}
+The main components involved in the starting and maintaining a private overlay
+are 1) dissemination of the security credentials and its name, 2) connecting
+with and storing data in the public overlay, and 3) discovering and connecting
+with peers in the private overlay.  1) can be application specific, though we
+propose a generic interface through the use of groups as described in Section
+Section~\ref{group_overlays}.  For 2), we presume the usage of a structured
+overlay as described in Section~\ref{structured_p2p}.  In this section, we
+discuss 3), the steps involved in creating and connecting to a private overlay
+after the user has obtained group information and has connected to a public
+overlay.
+
+To connect with and create a private overlay, the application performs the
+following steps:
+\begin{enumerate}
+\setlength{\itemsep}{0pt}
+\setlength{\parskip}{0pt}
+\item connects with the public overlay
+\item stores its node ID in the public overlay's DHT at the private group's key
+\item queries the public overlay's DHT at the private group's key
+\item start an instance of the private overlay with the well-known end points
+being those of the node IDs retrieved from the DHT
+\item upon forming a link with a member in the private overlay, the node follows
+the general approach for connecting to overlays
+\end{enumerate}
+
+The node should maintain membership in the public overlay when connected with
+the private overlay.  For two reasons, one so that other peers can discover the
+node while following the same set of steps and two for NAT traversal purposes
+discussed in the next paragraph.  Because the public overlay and its DHT
+provides a means for discovery, nodes must maintain there node ID in the public
+key's DHT.  A data inserter must constantly update the lease for the data
+object, otherwise the data will be removed.  This is because DHTs are
+implemented as leasing systems, whereby data objects are inserted with a time
+to live and removed upon expiration.
+
+During the formation of the private overlay, peers may find that they are
+unable to form direct connections with members of the private overlay.  For
+this, we have two solutions, 1) to use TURN NAT traveral as discussed
+in~\cite{nsdi10} and 2) use the public overlay as an extra routing massive TURN
+infrastructure.  The TURN NAT traversal technique has both peers connect with
+each others near neighbors in order to form a 2-hop connection with each other.
+The 2-hop route can either be enforced through a static route or through EtE
+greedy routing.  Due to the abstractions in the system, the public overlay can
+be treated as another mechanism to create PtP links, thus while packets may use
+EtE routing on the public overlay the private overlay nodes treat it as a PtP
+connection thus all communication is secured.  This approach can be further
+enhanced by allowing the private overlay to apply the TURN NAT traversal
+technique to the public overlay.  To do this, the private overlay must be
+capable of requesting a direct connection between the its node and the remote
+peer in the public overlay.  This would trigger the eventual creation of a 2-hop
+relay connection as presented in Figure~\ref{fig:overlay_relay}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=2.75in]{subring_tunnel.eps}
+\caption{Creating relays across the node address space, when direct
+connectivity is not possible.  Two members desire a direct connection but are
+unable to directly connect, perhaps due to NATs or firewalls.  They exchange
+private and public neighbor information through the private overlay and connect
+to one of each other's neighbors, creating an overlap.  The overlap then
+becomes a PtP relay path (represented by dashed lines), improving performance
+over routing across the entire overlay.}
+\label{fig:overlay_relay}
+\end{figure}
+
+Another concern we address is the cost of having to maintain additional
+connections for each additional private overlay.  For this, we created a notion
+called paths, which multiplexes a single UDP or TCP socket to support multiple
+overlay nodes.  This model is supported because of the abstraction done on
+senders and receivers.  Thus a UDP or TCP connection can be easily wrapped 
+inside an abitrary packet, in this case, a pathing connection.  Upon sending
+a packet, the message is prepended with path information.  When the remote side
+receives a packet, it parses and removes this pathing information and relays it
+to the appropriate receiver, i.e., overlay node.  To validate this apparoch, we
+present the tradeoffs of this approach in Figure~\ref{fig:pathing_eval}, which
+presents the network latency verse memory costs for varying sized pathing systems.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=2.75in]{in_progress.eps}
+\caption{Pathing evalution.}
+\label{fig:pathing_eval}
+\end{figure}
+
+When overlays are small and have significant churn, it is easy for data stored
+in the overlay to be easily lost.  This can be improved by implementing
+broadcast in the overlay.  In this model, each peer acts as a
+storage point for all data critical to itself.  If another peer cannot
+successfully find data stored at a specific key in the overlay, it can use
+MapReduce to broadcast the request to the entire overlay in an attempt to find
+the result.  We present a comparison of the time and network cost for both
+approaches in Figure~\ref{fig:broadcast_cost}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=2.75in]{in_progress.eps}
+\caption{Broadcast cost.}
+\label{fig:broadcast_cost}
+\end{figure}
+
 \subsection{Group Overlays}
 \label{group_overlays}
 To establish trusted links, we use the PKI model, where a centralized CA signs
@@ -532,106 +633,6 @@ Another approach would be to use the additional certificate revocation list
 certificates is the ability to remove a subset of a user's node, particularly
 useful in the case that the user was not malicious but that some of their nodes
 had been tampered or hijacked.
-
-\subsection{Private Overlays}
-The main components involved in the starting and maintaining a private overlay
-are 1) dissemination of the groups security credentials and its name, 2) 
-connecting with and storing data in the public overlay, and 3) discovering and
-connecting with peers in the private overlay.  1) is taken care of by the group
-interface as described in Section~\ref{group_overlays}.  For 2), we presume the
-usage of a structured overlay as described in Section~\ref{structured_p2p}.  In
-this section, we discuss 3), the steps involved in creating and connecting to a
-private overlay after the user has obtained group information and has connected
-to a public overlay.
-
-To connect with and create a private overlay, the application performs the
-following steps:
-\begin{enumerate}
-\setlength{\itemsep}{0pt}
-\setlength{\parskip}{0pt}
-\item connects with the public overlay
-\item stores its node ID in the public overlay's DHT at the private group's key
-\item queries the public overlay's DHT at the private group's key
-\item start an instance of the private overlay with the well-known end points
-being those of the node IDs retrieved from the DHT
-\item upon forming a link with a member in the private overlay, the node follows
-the general approach for connecting to overlays
-\end{enumerate}
-
-The node should maintain membership in the public overlay when connected with
-the private overlay.  For two reasons, one so that other peers can discover the
-node while following the same set of steps and two for NAT traversal purposes
-discussed in the next paragraph.  Because the public overlay and its DHT
-provides a means for discovery, nodes must maintain there node ID in the public
-key's DHT.  A data inserter must constantly update the lease for the data
-object, otherwise the data will be removed.  This is because DHTs are
-implemented as leasing systems, whereby data objects are inserted with a time
-to live and removed upon expiration.
-
-During the formation of the private overlay, peers may find that they are
-unable to form direct connections with members of the private overlay.  For
-this, we have two solutions, 1) to use TURN NAT traveral as discussed
-in~\cite{nsdi10} and 2) use the public overlay as an extra routing massive TURN
-infrastructure.  The TURN NAT traversal technique has both peers connect with
-each others near neighbors in order to form a 2-hop connection with each other.
-The 2-hop route can either be enforced through a static route or through EtE
-greedy routing.  Due to the abstractions in the system, the public overlay can
-be treated as another mechanism to create PtP links, thus while packets may use
-EtE routing on the public overlay the private overlay nodes treat it as a PtP
-connection thus all communication is secured.  This approach can be further
-enhanced by allowing the private overlay to apply the TURN NAT traversal
-technique to the public overlay.  To do this, the private overlay must be
-capable of requesting a direct connection between the its node and the remote
-peer in the public overlay.  This would trigger the eventual creation of a 2-hop
-relay connection as presented in Figure~\ref{fig:overlay_relay}.
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=2.75in]{subring_tunnel.eps}
-\caption{Creating relays across the node address space, when direct
-connectivity is not possible.  Two members desire a direct connection but are
-unable to directly connect, perhaps due to NATs or firewalls.  They exchange
-private and public neighbor information through the private overlay and connect
-to one of each other's neighbors, creating an overlap.  The overlap then
-becomes a PtP relay path (represented by dashed lines), improving performance
-over routing across the entire overlay.}
-\label{fig:overlay_relay}
-\end{figure}
-
-Another concern we address is the cost of having to maintain additional
-connections for each additional private overlay.  For this, we created a notion
-called paths, which multiplexes a single UDP or TCP socket to support multiple
-overlay nodes.  This model is supported because of the abstraction done on
-senders and receivers.  Thus a UDP or TCP connection can be easily wrapped 
-inside an abitrary packet, in this case, a pathing connection.  Upon sending
-a packet, the message is prepended with path information.  When the remote side
-receives a packet, it parses and removes this pathing information and relays it
-to the appropriate receiver, i.e., overlay node.  To validate this apparoch, we
-present the tradeoffs of this approach in Figure~\ref{fig:pathing_eval}, which
-presents the network latency verse memory costs for varying sized pathing systems.
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=2.75in]{in_progress.eps}
-\caption{Pathing evalution.}
-\label{fig:pathing_eval}
-\end{figure}
-
-When overlays are small and have significant churn, it is easy for data stored
-in the overlay to be easily lost.  This can be improved by implementing
-MapReduce~\cite{mapreduce} in the overlay.  In this model, each peer acts as a
-storage point for all data critical to itself.  If another peer cannot
-successfully find data stored at a specific key in the overlay, it can use
-MapReduce to broadcast the request to the entire overlay in an attempt to find
-the result.  We present a comparison of the time and network cost for both
-approaches in Figure~\ref{fig:mapreduce_cost}.
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=2.75in]{in_progress.eps}
-\caption{MapReduce cost.}
-\label{fig:mapreduce_cost}
-\end{figure}
 
 \section{Applications}
 \label{applications}
