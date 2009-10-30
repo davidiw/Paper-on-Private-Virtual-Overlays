@@ -285,7 +285,7 @@ certificates nor does it provide user-friendly or intuitive mechanisms for
 certificate revocation.
 
 \cite{one_ring} proposes the use of a universal overlay as a discovery plane for
-service overlay.  The argument is that as a participant of an overlay, you
+service overlay.  The argument is that a participant of an overlay
 must support all services provided by that overlay such as multicast, DHT,
 or distributed search.  Our work has the same foundations as this proposal but
 takes the idea further by using the universal overlay for NAT traversal;
@@ -329,7 +329,8 @@ certificates bound to the servers static IP address.  This approach does not
 port well to systems that use recursive routing, TLS cannot easily be used
 because overlay routing is traditionally done through datagrams not streams,
 which would require overlays to implement a reliable stream to use TLS.  Where
-as DTLS can be applied though it must support being used without a socket.  The
+as DTLS can be applied because it supports lost and out of order messages though
+the implementation must support usage without a socket.  The
 problem then becomes how to deal with identity.  In this section, we discuss how
 to bind security protocols and a certificate model to an overlay system.
 
@@ -707,6 +708,65 @@ autonomic~\cite{wow} and manual creation of single-hop connections and double-ho
 through relaying when NATs prevent direct connections.  Furthermore, we have
 developed a P2P VPN on top of this stack, which has been used for over three
 years to support a ad hoc distributed grid~\cite{archer, gridappliance}.
+
+For security, we have investigated two approaches reusing OpenSSL's DTLS or
+implementing a security stack using a completely managed security system.
+For portability reasons, we took a subset of DTLS session initialization
+methods and reused existing managed libraries for cryptographic algorithms like
+RSA, SHA, and AES.  As time passed, it became apparent that this solution meant
+keeping up with esoteric SSL attacks.  As such our current focus is to develop
+the existing mechanisms using DTLS.  In the rest of this section, we will
+discuss briefly the mechanisms of DTLS that we have employed and the steps to
+reusing OpenSSL's DTLS for EtE and PtP security.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=2.75in]{in_progress.eps}
+\caption{DTLS Handshake}
+\label{fig:dtls}
+\end{figure}
+
+The DTLS handshake used is presented in Figure~\ref{fig:dtls}.  As mentioned in
+earlier in Section~\ref{secure_overlays}, which we will now elaborate in more
+depth in this section, the constraints imposed on security by structured overlay
+with recursive routing include loss of packet reliabililty unless the overlay
+supports reliable streams (i.e. TCP) via EtE on the overlay, binding of a
+certificates to an overlay relevant ID, and to a lesser extent handling denial
+of services attacks based upon the ability to spoof datagram packets on the
+overlay.
+
+To support an abstracted data model, like EtE traffic or relay traffic in an
+overlay, DTLS as described in~\ref{dtls} cannot be used, specifically, we lose
+the ability to use the datagram BIO or I/O abstraction that provides a
+reliability layer.  Instead we have to use a memory BIO, that allows us to
+treat the DTLS state machine as a filter allowing us to create sessions to
+remote memory BIOs.  To do this, we initialize each DTLS SSL session with a
+read and write memory BIO.  To send a message, first write to the state machine,
+encrypted data will be available for reading from the read BIO.  The read BIO
+is used by the state machine to store outgoing data such as control or encrypted
+data messages and are transmitted via directly using sockets or the overlay to
+a remote write BIO.  After writing to the write BIO, the state machine can be
+checked to see if any data is available for reading.  If so, the data will be
+returned by calling a read on the state machine, which will decrypt the
+incoming encrypted data message.  All operations not mentioned such as reading
+the read BIO or writing the write BIO are handled by the state machine during
+read and write operations.  A graphical representation of our DTLS state machine
+is presented in Figure~\ref{fig:dtls_statemachine}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=2.75in]{in_progress.eps}
+\caption{DTLS Statemachine}
+\label{fig:dtls_statemachine}
+\end{figure}
+
+Operations such as cookie generation and certificate verification require
+additional steps not inherent in DTLS.  To handle this OpenSSL provides the
+ability to specify a function callback upon DTLS performing specific operations.
+In this case, it means implementing a cookie generation and verification
+algorith and a means to check a certificates node ID signature.  Of course in
+some cases, a node ID cannot be verified until after a PtP connection has been
+established.
 
 \subsection{Exploring Overheads}
 
