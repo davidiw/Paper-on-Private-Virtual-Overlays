@@ -32,67 +32,68 @@ University of Florida}
 \maketitle
 
 \begin{abstract}
-Using P2P overlays in distributed applications can significantly reduce the
-cost for maintenance by their automated configuration, maintenance, and
-optimization features.  Widespread adoption of P2P systems for home and small
-business purposes has been limited to read-only data services such as data
-transfer and streaming purposes in large part due to security concerns and
-difficulty bootstrapping in constrained environments.  The requirements for
+Structured P2P overlays provide a framework for distributed applications that
+are self-configuring, scalable, and resilient to node failures.  Such systems
+have been successfully adopted in large-scal Internet services such as content
+delivery networks and file sharing; however, widespread adoption in small/medium
+scales has been limited in part due to security concerns and difficulty in
+bootstrapping in NAT-constrained envirronments.  The requirements for
 a P2P system in this context are structure, NAT traversal, point-to-point overlay
 security, and a distributed data store.  Using these mechanisms, we propose
-a novel way of creating trusted overlays or overlays that are both secure and
-private by uisng a public overlay to coordinate discovery, security, and NAT
+a novel way of creating overlays that are both secure and
+private by using a public overlay to coordinate discovery, security, and NAT
 traversal.  Peers use the public overlay's distributed data store to discover
 each other and then use the public overlay to assist with NAT hole punching
-and as a relays providing STUN and TURN NAT traversal techniques.  Security is
-provided by a group web site available through either the Internet or the
-public overlay.  The group acts as a Public Key Infrastructure (PKI) relying on
+and as a relays providing STUN and TURN NAT traversal techniques.  The security
+framework is based on groups that can be created and managed by users through
+a web interface that can be hosted on the Internet or the public overlay.
+The group acts as a Public Key Infrastructure (PKI) relying on
 the use of a centrally managed web site providing an automated Certificate
-Authority (CA).  To qualify our design, we investigate different usage models
-and present a reference implementation providing a P2P VPN (Virtual Private
-Network).  Additionally, we evaluate our contributions using both the P2P VPN
-in a live environment as well as event-based simulated time.
+Authority (CA).  We present a reference implementation providing a P2P VPN
+(Virtual Private Network).  Additionally, we evaluate our contributions using
+both the P2P VPN in the PlanetLab wide-area testbed as well as with event-driven
+simulations of the overlay using simulated time delays.
 \end{abstract}
 \section{Introduction}
-Structured P2P overlays are largely self-managing though there has been a slow
-adoption rate outside the using them for discovery services in data distribution
-services such as BitTorrent and eDonkey and only as an optimization as the
-systems are still reliant on centralized systems.  General use of structured
-P2P systems, especially in home and small businesses, has been limited in large
-part due to the difficult nature of securing such systems with a sufficient level
-of trust.  Much previous work in securing these systems has focused on using
-decentralized techniques for free-to-join systems.  Though home and small
-businesses may need a greater level of trust than what can be guaranteed by
-anonymous contributors in free-to-join overlays but lack the resources for
-bootstrapping private overlays due to constrained environments, such as when a
-significant amount of or all peers are behind Network Address Translation
-devices (NAT).
+While Structured P2P overlays provide a scalable, resilient, and self-managing
+platform for distributed applications, there has been a slow adoption rate
+besides their use in discovery in data distribution services such as BitTorrent
+and eDonkey.  General use of structured P2P systems, especially in applications
+targeting home and small/medium businesses (SMBs), has been limited in large
+part due to the difficult nature of securing such systems to the level required
+by these users.  Much previous work in securing these systems has focused on
+using decentralized techniques for free-to-join systems.  Applications in home
+and SMBs may need a greater level of trust than what can be guaranteed by
+anonymous contributors in free-to-join overlays, but these users lack the
+resources for bootstrapping private P2P overlays particularly in constrained
+wide-are network environments, such as when a significant amount of or all
+peers are behind Network Address Translation devices (NAT).
 
-There are many different applications for P2P use in home and small business
-including data storage, media sharing, chat, and system maintenance and
-monitoring.  While there are applications in this realm, they fall into two
-categories, pure P2P systems that rely on anonymous sources and distributed
-systems that rely on a third party to provide discovery and management.  While
-using a third party service may reduce delivery time and provide a desirable
-level of trust, it may also have long term effects such as vendor lock-in,
-which may result in lost data, down time, and scalability constraints, all of
-which create significant headaches.
+There are many different P2P applications used in home and small business,
+primarily for collaboration and sharing.  These include data storage, media
+sharing, chat, and system maintenance and monitoring.  While there are
+applications that currently provide these functionalities, they fall into two
+categories:  anonymous, fully decentralized free-to-join P2P systems and
+distributed systems with P2P communcation that rely on a third party to provide
+discovery and management.  While using a third party service provides a desirable
+level of trust for many users, it has significant drawbacks such as vendor lock-in,
+which may result in lost data, down time, and scalability constraints.
 
-An example of a useful small business application is LogMeIn's~\cite{logmein}
-software products LogMeIn Pro and Hamachi.  LogMeIn Pro allows users to remotely
-manage and connect with their machines so long as they are willing to use
-LogMeIn's software and infrastructure.  Hamachi allows users to establish
-decentralized VPN links using centralized session management.  Both
-applications assist in the remote maintenance and monitoring of computers
-without requiring the user to implement the networking infrastructure provided
-by LogMeIn.
+An example of a useful small business application that falls into the latter
+category is LogMeIn's~\cite{logmein} software products LogMeIn Pro and Hamachi.
+LogMeIn Pro allows users to remotely manage and connect with their machines so
+long as they are willing to use LogMeIn's software and infrastructure.  Hamachi
+allows users to establish decentralized VPN links using centralized session
+management.  Both applications assist in the remote maintenance and monitoring
+of computers without requiring the user to implement the networking
+infrastructure provided by LogMeIn.
 
 Some examples of P2P applications in development are P2PSIP and P2Pns, rapidly
 evolving applications that have significant usefulness for homes and small
-businesses.  P2PSIP enables users to initiate visual and audio communication
-decentrally, while a P2Pns allows users to deploy a decentralized naming
-service.  Both applications allow users to contribute and benefit from all
-members of the system without the regulation of a third party but lack the
+businesses.  P2PSIP enables users to initiate throug decentralized means visual
+and audio communication , while P2Pns allows users to deploy a decentralized
+naming service.  Both applications allow users to contribute and benefit from
+all members of the system without the regulation of a third party but lack the
 ability to allow users to centrally secure and manage their own subset of the
 systems.
 
@@ -103,8 +104,12 @@ tolerant, the software uses an untrusted overlay.  Therefore all instances
 should be run in a secure environment, whether that be in a single institution
 or across a largely distributed environment using a VPN.
 
-In this paper, we present a design and implementation of a system that attempts
+In this paper, we describe the architecture of a system that attempts
 to balance the benefits of third party services with P2P infrastructures.
+Two main contributions of this paper are the architecture of a P2P messaging
+framework that integrates existing datagram-based security and supports
+bootstrapping multiple virtual private overlays that efficiently multiplex a
+peer's network resources subject to constraints such as NATs.
 Our system relies on a completely open infrastructure using mechanisms that
 reduce the maintenance and deployment burden that exist with decentralized
 P2P systems without the loss of ownership due to use of third party systems.
@@ -112,40 +117,43 @@ The components of our system follow:
 \begin{enumerate}
 \setlength{\itemsep}{0pt}
 \setlength{\parskip}{0pt}
-\item an application layer security system based upon DTLS to provide secure
-end-to-end (EtE) and point-to-point (PtP) in P2P overlays while transparently
-handling security concerns of relay NAT traversal;
-\item the bootstrapping of private P2P overlays using existing public overlays,
-because applying the concepts in this paper to a public free-to-join pool
-is non-trivial;
-\item a group web interface providing an automated front-end handler for a 
+\item An application layer security system based upon an existing datagram-based
+transport security (DTLS) framework to provide secure end-to-end (EtE) and
+point-to-point (PtP) in P2P overlays while transparently handling security
+concerns of relay NAT traversal.
+\item The bootstrapping of private P2P overlays using existing public overlays.
+The term "public overlay" refers to a free-to-join bootstrap overlay; nodes in
+the public overlay are not required to have public IP addresses and can be
+behind NATs.
+\item A group web interface providing an automated front-end handler for a 
 Public Key Infrastructure (PKI) that allows users to create their own secure
 systems relying on P2P overlays.
 \end{enumerate}
 
 Our approach provides an easy mechanism to create trusted overlays in
 constrained environments using a publicly available untrusted overlay as
-presented in Figure~\ref{fig:subrings}.  This model allows developers to focus
-on the application not concerning themselves with the security of the system.
+illustrated in Figure~\ref{fig:subrings}.  Akin to other virtualization
+techniques, the virtual private overlay model allows developers to focus
+on the application, while complexities associated with enforcing isolation
+and security and messaging are abstracted away from the developer.
 This approach also has benefits for system deployers, whereas insecure systems
 would require modifying the overlay software to support security, application
 level security, or the deployment of a decentralized and scalable VPN in
-addition to the overlay software.  Most importantly our model provides a clean
-abstraction, which should make porting applications sufficiently easy.
+addition to the overlay software.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=3.25in]{subrings.eps}
-\caption{The use of a single, public overlay to bootstrap multiple, unique
+\caption{The use of a single, public overlay to bootstrap multiple, isolated
 private overlays.  The center pool is the public pool.  Each node in the
 private pools has a corresponding partner in the public pool, the relationship
-is represented by a dashed line.  The relationship of a private node to a
-public can be many to 1.}
+is represented by a dashed line.  A public overlay node can be multiplexed by
+more than one private overlay.}
 \label{fig:subrings}
 \end{figure}
 
 The rest of this paper is organized as follows.  Section~\ref{structured_p2p}
-provides background on our and related work with emphasis on P2P systems.
+provides background and related work.
 Section~\ref{contributions} describes our contributions.  In
 Section~\ref{applications}, we present different usage models and present a
 real system using the techniques described in this paper, the GroupVPN.  In
