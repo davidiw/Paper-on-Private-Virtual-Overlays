@@ -336,7 +336,7 @@ to bind security protocols and a certificate model to an overlay system.
 
 The key to our approach is abstracting the communication layer making EtE and
 PtP traffic appear identical, thus all messages are datagrams that are sent
-over abstracted senders and receivers, as illustrated in
+over abstracted senders and receivers as filters illustrated in
 Figure~\ref{fig:senders_receivers}.  This allows us to use secure tunnels over
 these links with no application changes.
 
@@ -363,7 +363,7 @@ In overlay systems, a peer's connection manager requests to make an outgoing
 connection to another peer in the system.  This triggers the creation of a
 UDP or TCP socket, which are wrapped in the abstracted sender and receiver
 models.  The abstracted models arrive into the security handler, which
-authenticates in both directions and create a secure session.  The session is
+authenticates in both directions and creates a secure session.  The session is
 wrapped in the same abstracted model and presented to the overlay system as a
 direct connection to the remote peer.  To keep the system abstract, the security
 model and the wrapped sockets know nothing about the overlay, and so the overlay
@@ -400,35 +400,6 @@ time.  In our model, which deals with abstracted systems, this approach will
 not work.  Though because we are building on existing senders and receivers
 that already have state, we can use the objects memory pointer or hash value
 instead.
-
-Since symmetric keys work on limited block size, they use modes of operation
-to encrypt or decrypt large sets of blocks.  Because DTLS uses an unreliable
-transfer mechanism, each message should be able to be decrypted without the use
-of previous messages.  As suggested in the DTLS paper, we used cipher-block
-chaning (CBC) with a new initialization vector (IV) for each message.  During
-analysis, we discovered that generating a truly random IV was expensive but the
-initialization of an additional CBC state machine was even more.  To reduce
-these costs, the sender always uses the same CBC state machine and prepends
-the last cipher-block to the beginning of the next message.  Upon reception,
-a receiver compares the prepended message to a cache of CBC state machines
-stored by the current state, if there is a match, then the CBC state machine
-can be used, otherwise, if the packet is received out of order the receiver
-can start a new CBC state machine to decrypt the packet.  Table~\ref{tab:cbc_issue}
-compares the overhead with the default implementation and with our revised
-version.
-
-\begin{table}[h]
-\setlength{\itemsep}{0pt}
-\setlength{\parskip}{0pt}
-\centering
-\begin{tabular}[c]{|m{1.5cm}||m{3cm}|m{3cm}|} \hline
-& Latency (ms) & Bandwidth (Mbit/s) \\ \hline\hline
-DTLS CBC & 0 & 0 \\ \hline
-Our CBC & 0 & 0 \\ \hline
-\end{tabular}
-\caption{CBC Issue -- In Progress.}
-\label{tab:cbc_issue}
-\end{table}
 
 \subsection{Private Overlays}
 The main components involved in the starting and maintaining a private overlay
@@ -690,7 +661,7 @@ DHT, therefore, allowing the users profile to be visible whether they are
 offline or online.  Each users social network would than consist of the
 accumulation of the individual private overlays and the public overlay.
 
-\section{Evaluation}
+\section{Implementation Details and Evaluation}
 \label{evaluations}
 In this section, we describe our prototype implementation of a secure, private
 overlay followed by evaluation to quantify network, memory, and CPU overheads.
@@ -701,24 +672,51 @@ based upon the concepts introduced by Symphony~\cite{symphony}.  Thus it is a
 one-dimenesional ring, where peers connect with up to the four peers closest
 to themselves in both directions in the node ID space.  Shortcuts are based
 upon a harmonic distribution and the use of of proximity~\cite{hpdc08_0}.  The
-system supports both STUN based NAT traversal as well as a TURN-like system
-~\cite{nsdi10}.  The system uses a DHT as a distributed data store using a
-replication algorithm that spreads a single key, value pair throughout the ring
-as described in~\cite{pcgrid07}.  Additionally, the overlay has support for
-autonomic~\cite{wow} and manual creation of single-hop connections and double-hop
-through relaying when NATs prevent direct connections.  Furthermore, we have
-developed a P2P VPN on top of this stack, which has been used for over three
-years to support a ad hoc distributed grid~\cite{archer, gridappliance}.
+system supports distributed versions of STUN or hole-punching and TURN-like or
+relay based NAT traversal~\cite{nsdi10}.  The system uses a DHT as a distributed
+data store using a replication algorithm that spreads a single key, value pair
+throughout the ring as described in~\cite{pcgrid07}.  Additionally, the overlay
+has support for autonomic~\cite{wow} and manual creation of single-hop
+connections and double-hop through relaying when NATs prevent direct
+connections.  Furthermore, we have developed a P2P VPN on top of this stack,
+which has been used for over three years to support a ad hoc distributed
+grid~\cite{archer, gridappliance}.
 
-For security, we have investigated two approaches reusing OpenSSL's DTLS or
-implementing a security stack using a completely managed security system.
-For portability reasons, we took a subset of DTLS session initialization
-methods and reused existing managed libraries for cryptographic algorithms like
-RSA, SHA, and AES.  As time passed, it became apparent that this solution meant
-keeping up with esoteric SSL attacks.  As such our current focus is to develop
-the existing mechanisms using DTLS.  In the rest of this section, we will
-discuss briefly the mechanisms of DTLS that we have employed and the steps to
-reusing OpenSSL's DTLS for EtE and PtP security.
+The focuses of this paper is on security and the bootstrapping of private pools.
+In the previous sections, we have abstracted the implementation to generic
+overlays, while in this section, we will present our experiences and lessons
+learned in applying security protocols to the overlay.  To provide security, we
+investigated two approaches:  reusing OpenSSL's DTLS implementation or making
+our own platform independent DTLS using C\# and crytography routines provided
+by .NET.  Because we are sending messages over unreliable mediums such as UDP
+sockets, relays, and an overlay, we could not reuse SSL or TLS.  Additionally
+we want EtE security for relays and overlay communication, the security needed
+to be implemented through a filter or only in memory and not on a socket.
+
+While OpenSSL great name recognition, US federal government approved code, and 
+platform portability, during our use of the platform we experienced several
+issues.  The portability provided by OpenSSL is limited to API (Application
+Programming Interface) and not ABI (Applicatoin Binary Interface), which
+requires a platform specific library be either installed or distributed with
+the application.  Whereas the purpose in using C\#, like Java, is that a single
+binary can run on any platform.  To use unmanaged libraries from a managed
+language requires a marshaling wrapper to handle the translation, we found
+such a wrapper for OpenSSL~\cite{openssl.net}.  A constraint we found when
+using the library was the naming of the OpenSSL libraries was not consistent
+across platforms and, additonally, Windows lacked a formal installation method.
+In using the OpenSSL library with DTLS, in version 0.9.8k, renegotiation of
+security parameters  was broken and would result in a dead locked DTLS session,
+where as in 1.0.0-beta3 (the latest released beta) DTLS renegotiation worked
+it would often segmentation fault.
+
+Due to the constraints of OpenSSL, we desired to have a reliable security
+implementation that would work transparently for those that could risk the
+loss of the guarantees made by OpenSSL.  To provide for flexibility between
+the two approaches, we created a security overlord that treats each approach
+like a filter.  Treating each implementation as a filter allows incoming control
+and data messages to be pushed into the object and data and control messages to
+be pulled out of the object.  The handshake used is shown in
+Figure~\ref{fig:dtls}.
 
 \begin{figure}[h]
 \centering
@@ -727,32 +725,29 @@ reusing OpenSSL's DTLS for EtE and PtP security.
 \label{fig:dtls}
 \end{figure}
 
-The DTLS handshake used is presented in Figure~\ref{fig:dtls}.  As mentioned in
-earlier in Section~\ref{secure_overlays}, which we will now elaborate in more
-depth in this section, the constraints imposed on security by structured overlay
-with recursive routing include loss of packet reliabililty unless the overlay
-supports reliable streams (i.e. TCP) via EtE on the overlay, binding of a
-certificates to an overlay relevant ID, and to a lesser extent handling denial
-of services attacks based upon the ability to spoof datagram packets on the
-overlay.
-
-To support an abstracted data model, like EtE traffic or relay traffic in an
-overlay, DTLS as described in~\ref{dtls} cannot be used, specifically, we lose
-the ability to use the datagram BIO or I/O abstraction that provides a
-reliability layer.  Instead we have to use a memory BIO, that allows us to
-treat the DTLS state machine as a filter allowing us to create sessions to
-remote memory BIOs.  To do this, we initialize each DTLS SSL session with a
-read and write memory BIO.  To send a message, first write to the state machine,
-encrypted data will be available for reading from the read BIO.  The read BIO
-is used by the state machine to store outgoing data such as control or encrypted
-data messages and are transmitted via directly using sockets or the overlay to
-a remote write BIO.  After writing to the write BIO, the state machine can be
-checked to see if any data is available for reading.  If so, the data will be
-returned by calling a read on the state machine, which will decrypt the
-incoming encrypted data message.  All operations not mentioned such as reading
-the read BIO or writing the write BIO are handled by the state machine during
-read and write operations.  A graphical representation of our DTLS state machine
-is presented in Figure~\ref{fig:dtls_statemachine}.
+Implementation of an OpenSSL DTLS filter was non-trivial as documentation is
+sparse providing the possibility for varied approaches.  Traditionally, DTLS
+uses the DGRAM (datagram) BIO (I/O abstraction) layer, which provides a reliable
+UDP layer.  Because we need a filter, so that we can do both EtE and PtP traffic,
+we used one memory BIO  for incoming traffic and another for outgoing traffic.
+Memory BIOs provide pipes using a RAM, data written to the BIO can then be read
+in a first in, first out ordering.  Incoming messages written to or outgoing
+messages read from the DTLS read or write bios, respectively, are either 
+either encrypted data packets or handshake control messages.  Sending and 
+receiving clear text messages occur at the DTLS SSL object layer.  The pathway
+for sending a clear text packet begins with the user performing an SSL\_write
+operation, retrieving the encrypted data by perform a BIO\_read on the write
+BIO, and sending the data over the network.  At the remote end, the packet is
+passed to the SSL state machine by performing a BIO\_write on the incoming BIO
+followed by a SSL\_read, the result will be the original clear text message.
+This process also needs to handle control messages, we provide clear context in
+Figure~\ref{fig:dtls_statemachine}.  As an aside, OpenSSL supports a SSL filter
+BIO, though it will not work for this purpose as BIOs that are inserted are
+expected to have two pipes, like a socket or two memory buffers.  Also the only
+benefit of using the filter BIO would be that it manages auto-renegotiation,
+which can be implemented in user code by monitoring time and received byte
+count.  Other operations such as certificate verification and cookie generation
+are handled by SSL callbacks, which hook into our security framework.
 
 \begin{figure}[h]
 \centering
@@ -761,13 +756,43 @@ is presented in Figure~\ref{fig:dtls_statemachine}.
 \label{fig:dtls_statemachine}
 \end{figure}
 
-Operations such as cookie generation and certificate verification require
-additional steps not inherent in DTLS.  To handle this OpenSSL provides the
-ability to specify a function callback upon DTLS performing specific operations.
-In this case, it means implementing a cookie generation and verification
-algorith and a means to check a certificates node ID signature.  Of course in
-some cases, a node ID cannot be verified until after a PtP connection has been
-established.
+Since symmetric keys work on limited block size, they use modes of operation
+to encrypt or decrypt large sets of blocks.  Because DTLS uses an unreliable
+transfer mechanism, each message should be able to be decrypted without the use
+of previous messages.  As suggested in the DTLS paper, we used cipher-block
+chaning (CBC) with a new initialization vector (IV) for each message.  During
+analysis of our C\# implementation, we discovered that generating an IV was
+expensive but the initialization of an additional CBC state machine was even
+more.  To reduce these costs, the sender always uses the same CBC state machine
+and prepends the last cipher-block to the beginning of the next message.  Upon
+reception, a receiver compares the prepended message to a cache of CBC state
+machines stored by the current state, if there is a match, then the CBC state
+machine can be used, otherwise, if the packet is received out of order the
+receiver can start a new CBC state machine to decrypt the packet.
+Table~\ref{tab:cbc_issue} compares the overhead with the default implementation
+and with our revised version.  This issue does not appear in the OpenSSL
+implementation of CBC.
+
+\begin{table}[h]
+\setlength{\itemsep}{0pt}
+\setlength{\parskip}{0pt}
+\centering
+\begin{tabular}[c]{|m{1.5cm}||m{3cm}|m{3cm}|} \hline
+& Latency (ms) & Bandwidth (Mbit/s) \\ \hline\hline
+DTLS CBC & 0 & 0 \\ \hline
+Our CBC & 0 & 0 \\ \hline
+\end{tabular}
+\caption{CBC Issue -- In Progress.}
+\label{tab:cbc_issue}
+\end{table}
+
+We leave the choice of security implementation up to the user.  While we believe
+OpenSSL's DTLS to be a superior choice due to its prevalence and being well
+studied, it is non-trivial to make available for all platforms.  Because our
+goal is to provide a safe yet easy to use package, we leave the decision up to
+the user which protocol to use.  We believe home users and those interested in
+testing the system will start with the .NET security stack and migrate to the
+OpenSSL DTLS stack.
 
 \subsection{Exploring Overheads}
 
