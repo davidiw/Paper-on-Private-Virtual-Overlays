@@ -21,8 +21,8 @@
 \clubpenalty=10000
 
 \begin{document}
-\title{On the Design and Implementation of Secure, Private Overlays in
-Constrained Environments}
+\title{Virtual Private Overlays: Secure Group Communication over Decentralized
+Public Overlays in NAT-Constrained Environments}
 
 \author{\IEEEauthorblockN{David Isaac Wolinsky and Renato Figueiredo} 
 \IEEEauthorblockA{Advanced Computing Information Systems Lab\\
@@ -32,20 +32,20 @@ University of Florida}
 \maketitle
 
 \begin{abstract}
-Structured P2P overlays provide a framework for distributed applications that
+Structured P2P overlays provide a framework for building distributed applications that
 are self-configuring, scalable, and resilient to node failures.  Such systems
-have been successfully adopted in large-scal Internet services such as content
+have been successfully adopted in large-scale Internet services such as content
 delivery networks and file sharing; however, widespread adoption in small/medium
-scales has been limited in part due to security concerns and difficulty in
-bootstrapping in NAT-constrained envirronments.  The requirements for
-a P2P system in this context are structure, NAT traversal, point-to-point overlay
+scales has been limited due in part to security concerns and difficulty
+bootstrapping in NAT-constrained envirronments.  P2P systems in this context
+provide guaranteed look-up times (structure), NAT traversal, point-to-point overlay
 security, and a distributed data store.  Using these mechanisms, we propose
 a novel way of creating overlays that are both secure and
-private by using a public overlay to coordinate discovery, security, and NAT
-traversal.  Peers use the public overlay's distributed data store to discover
-each other and then use the public overlay to assist with NAT hole punching
-and as a relays providing STUN and TURN NAT traversal techniques.  The security
-framework is based on groups that can be created and managed by users through
+private through the use of a public overlay.
+Private nodes use the public overlay's distributed data store to discover
+each other and the public overlay's connections to assist with NAT hole punching
+and as relays providing STUN and TURN NAT traversal techniques.  The security
+framework utilizes groups, which are created and managed by users through
 a web interface that can be hosted on the Internet or the public overlay.
 The group acts as a Public Key Infrastructure (PKI) relying on
 the use of a centrally managed web site providing an automated Certificate
@@ -56,8 +56,8 @@ simulations of the overlay using simulated time delays.
 \end{abstract}
 \section{Introduction}
 While Structured P2P overlays provide a scalable, resilient, and self-managing
-platform for distributed applications, there has been a slow adoption rate
-besides their use in discovery in data distribution services such as BitTorrent
+platform for distributed applications, their adoption rate has been slow outside
+data distribution services such as BitTorrent
 and eDonkey.  General use of structured P2P systems, especially in applications
 targeting home and small/medium businesses (SMBs), has been limited in large
 part due to the difficult nature of securing such systems to the level required
@@ -70,9 +70,9 @@ wide-are network environments, such as when a significant amount of or all
 peers are behind Network Address Translation devices (NAT).
 
 There are many different P2P applications used in home and small business,
-primarily for collaboration and sharing.  These include data storage, media
-sharing, chat, and system maintenance and monitoring.  While there are
-applications that currently provide these functionalities, they fall into two
+primarily for collaboration and sharing including data storage, media
+sharing, chat, and system maintenance and monitoring.
+Applications that currently provide these functionalities fall into two
 categories:  anonymous, fully decentralized free-to-join P2P systems and
 distributed systems with P2P communcation that rely on a third party to provide
 discovery and management.  While using a third party service provides a desirable
@@ -119,7 +119,11 @@ The components of our system follow:
 \setlength{\parskip}{0pt}
 \item An application layer security system based upon an existing datagram-based
 transport security (DTLS) framework to provide secure end-to-end (EtE) and
-point-to-point (PtP) in P2P overlays while transparently handling security
+point-to-point (PtP) in P2P overlays\footnote{For our discussion a point-to-point
+or PtP relationship refers to direct connections between two peers, such as a UDP
+or TCP socket; whereas, an end-to-end or EtE relationship refers to messages passed
+through the overlay, which may be routed over many PtP links.}
+ while transparently handling security
 concerns of relay NAT traversal.
 \item The bootstrapping of private P2P overlays using existing public overlays.
 The term "public overlay" refers to a free-to-join bootstrap overlay; nodes in
@@ -231,16 +235,16 @@ communication will be an application primitive and rendering TLS and DTLS not
 easily applicable.
 
 \subsubsection{Private and Secure Overlay Subsets}
-Secured ETE does not increase the reliability of a structured
+Secured EtE does not increase the reliability of a structured
 overlay.  In a free-to-join system, malicious peers can easily intercept packets
-and throw them away or tamper with them rendering them useless.  To deal with
-this issue, each overlay node participate in a specific, secure EtE session,
-could maintain a routing table that contains a subset of those involved.  The
-approach would then require that the overlay support what is effectively a
-second overlay but without an abstraction.  Requiring that each node instance
-maintain multiple routing algorithms, state machines to handle fault tolerance,
-and a mechanism for using a distributed data store only for the entire pool and
-this subset.
+for eavesdropping, throwing them away, or tampering them rendering them useless.  To deal with
+this issue, each overlay node could participate with a subset of other nodes in
+a secure system where each peer would maintain a routing table containing a subset
+of those involved.  Each node would have to distinguish between the different
+messages, handing them to unique routers for each group, handle connectivity
+of the subset during churn, and a distributed data store for use by this subset.
+Effectively creating multiple overlays without the advantage of a clean
+abstraction to do so.
 
 \subsubsection{NATs}
 Another issue present in P2P systems is the handling of NATs.  In environments
@@ -255,7 +259,7 @@ verify each other.
 \subsection{Related Works}
 BitTorrent~\cite{bittorrent_security}, a P2P data sharing service,  supports
 stream encryption between peers sharing files.  The purpose of BitTorrent
-security is not to keep messages private but to obfuscate packets to prvent
+security is not to keep messages private but to obfuscate packets to
 prevent traffic shapping due packet sniffing, thus BitTorrent security uses a
 weak stream cipher, RC4, and lacks peer authentication as symmetric keys are
 exchanged through an unauthenticated Diffie-Hellman process.
@@ -270,7 +274,7 @@ through Hamachi's central servers.  In the latest version, this model has been
 retained but with the addition of an external PKI, which avoids the
 man-in-the-middle attack but with has the additional cost of maintaining both
 an external CA and certificate revocation list (CRL).  Hamachi also supports
-STUN and TURN style NAT traversal though TURN, again, requires the use of
+STUN, or NAT hole punching, and TURN style NAT traversal, though TURN requires the use of
 Hamachi's own relay servers.  Because Hamachi is closed, it disables users from
 hosting their own infrastructures including session management and relay
 servers.
@@ -299,6 +303,9 @@ or distributed search.  Our work has the same foundations as this proposal but
 takes the idea further by using the universal overlay for NAT traversal;
 the service overlays become limited access, private overlays; and we have
 a prototype implementation, which is reflected in our well-defined design.
+Similarly, Randpeer~\cite{randpeer} uses a common overlay along with a
+subnetting service to create individual networks for applications and services,
+though the project has seen little activity and lacks implementation details.
 
 Distributed data store applications like~\cite{dynamo, bigtable} require that
 all machines have symmetric connectivity additionally like~\cite{past} suggest
@@ -328,6 +335,10 @@ begin by describing how apply a DTLS like protocol for EtE and PtP security in
 P2P systems, which leads to a discussion of using a group web interface to
 provide a user-friendly PKI, and conlude with our approach to bootstrapping
 private and secure overlays in constrained environments using public overlays.
+DTLS is attractive because it supports the ability to handle situations where
+there are no guarantees about communication reliability, it handles both
+out-of-order and dropped packets.
+
 
 \subsection{Secure Overlays}
 \label{secure_overlays}
@@ -458,7 +469,7 @@ EtE routing on the public overlay the private overlay nodes treat it as a PtP
 connection thus all communication is secured.  This approach can be further
 enhanced by allowing the private overlay to apply the TURN NAT traversal
 technique to the public overlay.  To do this, the private overlay must be
-capable of requesting a direct connection between the its node and the remote
+capable of requesting a direct connection between its node and the remote
 peer in the public overlay.  This would trigger the eventual creation of a 2-hop
 relay connection as presented in Figure~\ref{fig:overlay_relay}.
 
@@ -653,8 +664,9 @@ failed NAT traversal attempts via relaying.
 
 \subsection{Social Networks}
 Social networks such as Facebook and MySpace provide an opportunity for users to
-indirectly via the Internet share information with friends, family, and peers.
-Most social network structures rely on the use hosted systems, where they become
+indirectly share information with friends, family, and peers via a profile
+containing personal information, status updates, and pictures.
+Most social network structures rely on hosted systems, where they become
 the keepers of user data, introducing a new trust relationship.  Private overlays
 can remove this third party making users the only owner of their data.  For this
 model, we propose that each user's profile be represented by a private overlay
