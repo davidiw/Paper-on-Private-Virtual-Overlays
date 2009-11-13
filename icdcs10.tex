@@ -453,8 +453,8 @@ discussed in the next paragraph.  Because the public overlay and its DHT
 provides a means for discovery, nodes must maintain there node ID in the public
 key's DHT.  A data inserter must constantly update the lease for the data
 object, otherwise the data will be removed.  This is because DHTs are
-implemented as leasing systems, whereby data objects are inserted with a time
-to live and removed upon expiration.
+implemented as leasing systems or as soft state, whereby data objects are
+inserted with a time to live and removed upon expiration.
 
 During the formation of the private overlay, peers may find that they are
 unable to form direct connections with members of the private overlay.  For
@@ -477,12 +477,12 @@ relay connection as presented in Figure~\ref{fig:overlay_relay}.
 \centering
 \includegraphics[width=2.75in]{subring_tunnel.eps}
 \caption{Creating relays across the node address space, when direct
-connectivity is not possible.  Two members desire a direct connection but are
-unable to directly connect, perhaps due to NATs or firewalls.  They exchange
-private and public neighbor information through the private overlay and connect
-to one of each other's neighbors, creating an overlap.  The overlap then
-becomes a PtP relay path (represented by dashed lines), improving performance
-over routing across the entire overlay.}
+connectivity is not possible.  Two members, A and B, desire a direct connection
+but are unable to directly connect, perhaps due to NATs or firewalls.  They
+exchange private, 1, and public, 2, neighbor information through the private
+overlay and connect to one of each other's neighbors, creating an overlap.  The
+overlap then becomes a PtP relay path (represented by directed, dashed lines),
+improving performance over routing across the entire overlay.}
 \label{fig:overlay_relay}
 \end{figure}
 
@@ -494,7 +494,7 @@ senders and receivers.  Thus a UDP or TCP connection can be easily wrapped
 inside an abitrary packet, in this case, a pathing connection.  Upon sending
 a packet, the message is prepended with path information.  When the remote side
 receives a packet, it parses and removes this pathing information and relays it
-to the appropriate receiver, i.e., overlay node.  To validate this apparoch, we
+to the appropriate receiver, i.e., overlay node.  To validate this approach, we
 present the tradeoffs of this approach in Figure~\ref{fig:pathing_eval}, which
 presents the network latency verse memory costs for varying sized pathing systems.
 
@@ -520,6 +520,20 @@ approaches in Figure~\ref{fig:broadcast_cost}.
 \caption{Broadcast cost.}
 \label{fig:broadcast_cost}
 \end{figure}
+
+During our evalution, we discovered that in certain cases the private overlay
+would be in a fragmented state, that is, multiple overlays each believing to be
+in a well-formed state but all members of a single fragmented private overlay.
+The individual overlays never communicated with each other and thus the
+private overlay itself was never well-formed.  The issue was a result of churn
+in the system, which would cause the DHT key that contained the list of private
+overlay peers to become unstable.  The resolution for this problem is that once
+a node is connected to the overlay continue to query the DHT.  If the node
+discovers a node ID in the list, that is its local connection range, it needs
+to do something to trigger the nodes state machine to connect with this peer,
+which should trigger the rest of the fragmented overlay to heal itself.  In our
+system, this involved creating a bootstrapping connection with the peer.  Upon
+a successful connection, the system started the process of healing the overlay.
 
 \subsection{Group Overlays}
 \label{group_overlays}
@@ -587,20 +601,25 @@ list is up to date.
 Though because the user revocation list requires centralization, users should
 not query it prior to every communication nor periodically during conversations.
 As such, the use of the DHT and broadcast assist provide active notification of
-user revocation.  The DHT method allows users to request notification if a peer
-is revoked from the group.  The method for doing this is for the user to place
-their node ID at the peer's revocation notification key.  Whereupon revocation,
-the CA will query the key for its values and notify all the users of the
-revocation.  Whereas the broacast mechanism notifies all active peers in the
-overlay of the revocation.
+user revocation.  Revocation through the DHT method allows a peer to request
+notification if another peer is revoked from the group.  To subscribe for this
+notification, the peer inserts its node ID at the peer's revocation
+notification key, which we represent as a hash of its node ID.  Upon revocation,
+the CA will first insert a revocation notice at this key and then query the
+key for all node IDs notifying each of them of the revocation.  The insertion
+of the revocation notice handles a race condition, where a peer may insert
+its ID but never receive a notification.  Therefore after inserting the request
+for notification revocation, the peer should ensure that a revocation has not
+occurred by querying the DHT to verifying this value does not exist.
 
 When the group is securing PtP traffic, the DHT approach does not effectively
 seal the rogue user from the system until all peers have updated the revocation
-list.  Due to this issue, we do not employ this model in the group overlay.
-Instead a broadcast will ensure that all peers in the system do know about
-the revocation.  The strength of the DHT approach exists when using a public
-free-to-join and an application secured by the group, as we did with a VPN in
-~\cite{nsdi10}.
+list.  A peer may continuously connect to all peers in the system until they
+have all queried the DHT key prior to verification.  Due to this issue, we do
+not employ this model in the group overlay.  Instead a broadcast will ensure
+that all peers in the system do know about the revocation.  The strength of
+the DHT approach exists when using a public free-to-join and an application
+secured by the group, as we did with a VPN in~\cite{nsdi10}.
 
 In Figure~\ref{fig:broadcast_revocation}, we present the cost of revoking a
 peer in varying sized networks.  To evaluate the cost, we estimate that the
@@ -761,7 +780,7 @@ BIO, and sending the data over the network.  At the remote end, the packet is
 passed to the SSL state machine by performing a BIO\_write on the incoming BIO
 followed by a SSL\_read, the result will be the original clear text message.
 This process also needs to handle control messages, we provide clear context in
-Figure~\ref{fig:dtls_statemachine}.  As an aside, OpenSSL supports a SSL filter
+Figure~\ref{fig:dtls_filter}.  As an aside, OpenSSL supports a SSL filter
 BIO, though it will not work for this purpose as BIOs that are inserted are
 expected to have two pipes, like a socket or two memory buffers.  Also the only
 benefit of using the filter BIO would be that it manages auto-renegotiation,
@@ -771,9 +790,17 @@ are handled by SSL callbacks, which hook into our security framework.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=2.75in]{in_progress.eps}
-\caption{DTLS Statemachine}
-\label{fig:dtls_statemachine}
+\includegraphics[width=2.75in]{dtls_filter.eps}
+\caption{The DTLS filter.  To send a secure message, execute SSL\_write and
+retrieve the encrypted packet at the WRITE BIO via a BIO\_read.  To verify
+and decrypt a packet, execute BIO\_write on the READ BIO and retrieve the
+packet via SSL\_read.  When SSL\_write or SSL\_read return the error WANT\_READ.
+This means that either it is waiting for a control message or one is available
+at the WRITE BIO.  If a message is retrieved from the WRITE BIO, it is a control
+message.  Because DTLS does not provide reliability when using the memory BIO,
+control messages should be sent using a reliable medium, such as a light-weight
+request/reply system.}
+\label{fig:dtls_filter}
 \end{figure}
 
 Since symmetric keys work on limited block size, they use modes of operation
@@ -814,7 +841,58 @@ the user which protocol to use.  We believe home users and those interested in
 testing the system will start with the .NET security stack and migrate to the
 OpenSSL DTLS stack.
 
-\subsection{Exploring Overheads}
+\subsection{Exploring Overheads Using Simulations}
+In this section, we evaluate the bandwidth consumed by our private overlay model
+and the amount of real time it takes for network connectivity.  To simulate our
+system, we have developped that applies an event-driven time simulation to our
+P2P software.  This allows us to verify correct behavior in the system prior to
+testing out on real systems, such as PlanetLab, as well as do experiments in a
+controlled environment simplifying the evaluation but allowing us to use a real
+system to do so.
+
+In this experiment, we will determine 1) time to bootstrap a large amount of
+peers into the private overlay, 2) time to add one additional peer to a steady-state
+system, and 3) bandwidth used by the system over the experiment.  To understand
+the cost of using security, we evaluate the system when the private overlay has
+PtP security disabled and enabled.
+
+The steps in the experiment follow:  We start with a base system where
+there are 20 nodes in a well-formed public pool that are in steady-state, that is
+60 minutes after they have a well-formed overlay.  We then introduce 500 peers
+with some subset joining a monitored private overlay.  Our simulations were
+limited to 500 nodes due to the resource requirements  necessary to simulate a
+system where there are over 500 privately secured nodes and 500 public nodes.
+We measure the time to
+bring the public overlay back to a well-formed state as well as the time to form
+the private overlay, presented in Figure~\ref{fig:big_join}.  At which point, we
+wait another 60 minutes for steady-state to occur in both systems and we add a
+new node that joins both the public and private overlays and measure the time
+for both, presented in Figure~\ref{fig:single_join}.  Thereupon, we calculate the
+bandwidth of the system for the entire time and end the simulation, presented in
+Figure~\ref{fig:bandwidth}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=2.75in]{in_progress.eps}
+\caption{1000 Node Join}
+\label{fig:big_join}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=2.75in]{in_progress.eps}
+\caption{Single Node Join}
+\label{fig:single_join}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=2.75in]{in_progress.eps}
+\caption{Bandwidth}
+\label{fig:bandwidth}
+\end{figure}
+
+\subsection{Exploring Overheads Using PlanetLab}
 
 \section{Conclusion}
 \label{conclusions}
