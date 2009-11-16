@@ -296,6 +296,8 @@ address.  A RobotCA does not provide features to limit the signing of
 certificates nor does it provide user-friendly or intuitive mechanisms for
 certificate revocation.
 
+Three approaches that propose a public overlay to create sub-overlays are
+\cite{one_ring}, \cite{randpeer}, and \cite{can_multicast}.
 \cite{one_ring} proposes the use of a universal overlay as a discovery plane for
 service overlay.  The argument is that a participant of an overlay
 must support all services provided by that overlay such as multicast, DHT,
@@ -306,6 +308,10 @@ a prototype implementation, which is reflected in our well-defined design.
 Similarly, Randpeer~\cite{randpeer} uses a common overlay along with a
 subnetting service to create individual networks for applications and services,
 though the project has seen little activity and lacks implementation details.
+Unlike the previous two, \cite{can_multicast} limits the sub-overlay for the
+purpose of establishing multicast groups, though their approach lacks discussion
+on how nodes discover and form a new overlay as such their approach is limited
+to simulations.
 
 Distributed data store applications like~\cite{dynamo, bigtable} require that
 all machines have symmetric connectivity additionally like~\cite{past} suggest
@@ -522,18 +528,27 @@ approaches in Figure~\ref{fig:broadcast_cost}.
 \end{figure}
 
 During our evalution, we discovered that in certain cases the private overlay
-would be in a fragmented state, that is, multiple overlays each believing to be
-in a well-formed state but all members of a single fragmented private overlay.
-The individual overlays never communicated with each other and thus the
-private overlay itself was never well-formed.  The issue was a result of churn
-in the system, which would cause the DHT key that contained the list of private
-overlay peers to become unstable.  The resolution for this problem is that once
-a node is connected to the overlay continue to query the DHT.  If the node
-discovers a node ID in the list, that is its local connection range, it needs
-to do something to trigger the nodes state machine to connect with this peer,
-which should trigger the rest of the fragmented overlay to heal itself.  In our
+would not form a proper well-formed state but rather more than one distinct
+overlays creating a fragmented overlay.  The underlying issue was that the
+fragmented overlays believed they were in a well-formed state and thus never
+reviewed the DHT list to determine if there were peers that should be their
+neighbors.  This caused the overlays to remain fragmented until either a new
+peer joined or enough peers left causing the nodes to believe they are in a
+non-well-formed state adn require bootstrapping links or a more proactive 
+method.  The reason the issue even existed was that states of significant churn,
+especially during a bootstrapping of a significant amount of new nodes in the
+system, the DHT list can become unstable with each set of node potentially
+seeing different lists.  Of course by the end, the lists would be well-formed,
+but at that point, the nodes have already fragmented.
+
+To proactively solve the fragmentation issue, the node performs the following
+steps: 1) continuously query the DHT;  2) upon receiving the DHT query result,
+the node determines if there is a peer with whom it should be connected to
+such as that it is closer in the address space then any of its current neighbors;
+3) form a connection with that peer; and 4) the system should automatically at
+this point in time realize the network fragmentation and heal itself.  In our
 system, this involved creating a bootstrapping connection with the peer.  Upon
-a successful connection, the system started the process of healing the overlay.
+a successful connection, the system automatically causes the networks to heal.
 
 \subsection{Group Overlays}
 \label{group_overlays}
@@ -608,9 +623,9 @@ notification key, which we represent as a hash of its node ID.  Upon revocation,
 the CA will first insert a revocation notice at this key and then query the
 key for all node IDs notifying each of them of the revocation.  The insertion
 of the revocation notice handles a race condition, where a peer may insert
-its ID but never receive a notification.  Therefore after inserting the request
-for notification revocation, the peer should ensure that a revocation has not
-occurred by querying the DHT to verifying this value does not exist.
+its ID but never receive a notification.  Thus after inserting the request for
+notification upon revocation, the peer should ensure that a revocation has not
+occurred by querying the DHT to verify the CA has not inserted a revocation.
 
 When the group is securing PtP traffic, the DHT approach does not effectively
 seal the rogue user from the system until all peers have updated the revocation
@@ -699,6 +714,17 @@ locally, which will be distributed amongst the private overlay in a read-only
 DHT, therefore, allowing the users profile to be visible whether they are
 offline or online.  Each users social network would than consist of the
 accumulation of the individual private overlays and the public overlay.
+
+\subsection{Multicast}
+The topic of secure multicast has been a focus of much research citations.
+Using an approach similator to CAN~\cite{can_multicast}, a private ring can form
+a ring where all nodes are members of the multicast group with the additional
+feature that you can trust that your audience is limited to those in the
+overlay.  The main advantage of such multicasting technologies would be for
+wide-area, distributed multicast for the purposes of systems supports different
+types of multicast applications such as light weight multicast DNS / DNS-SD
+(service discovery) or more heavy weight but fault tolerant like streaming
+audio and video.
 
 \section{Implementation Details and Evaluation}
 \label{evaluations}
@@ -893,6 +919,51 @@ Figure~\ref{fig:bandwidth}.
 \end{figure}
 
 \subsection{Exploring Overheads Using PlanetLab}
+For this experiment, we take the code used in simulation and deploy it in a
+real environment, PlanetLab.  PlanetLab~\cite{planetlab} consists of a
+consortium of research institutes sharing several hundred globally distributed
+network and computing resources.  PlanetLab provides a very interesting
+environment as there is constant unexpected churn of machines due to the
+extreme load placed on the resources and system restarts.  Unlike our
+simulations done in the previous experiment, this experiment will give us a
+glimpse of what to expect from the P2P software stack when used in more typical
+environments.  As such our experiments for this section focus on user perception
+and experience.
+
+In this experiment, we will evaluate the bandwidth used by an abitrary sized
+system over the course of 24 hours.  Afterwards, we will determine the time
+required to properly connect to the overlay, which is not the same measurement
+used in the simulation.  In the simulation, we measured the time for the network
+to return to a complete state, in the case of a real system, this state becomes
+very difficult to obtain, as such we focus only on the local nodes perception of
+connectivity.  While we attempt to place as many peers into the system, due to
+the fact that PlanetLab nodes may be on or off, power cycled, or even
+disconnected at any time, we cannot make guarantees about the size of the
+network.  As such, we attempt to install the package on every PlanetLab node and
+at the end of the experiment, review the results for only those nodes which
+remained connected for the entire 24 hour period.
+
+On average, a PlanetLab system usually has around 500 nodes online after 24
+hours.  Using this approximation, we configured the system to support 25 groups
+with an average of 20 participants each.  This causes a distribution of having
+each peer in the public pool be a member of one of the private groups.  We
+repeat the experiment with and without secure private overlays enabled.  The
+results for bandwidth and connection time are presented in
+Figure~\ref{fig:bandwidth_plab} and Figure~\ref{fig:time_plab}, respectively.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=2.75in]{in_progress.eps}
+\caption{Single Node Join}
+\label{fig:bandwidth_plab}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=2.75in]{in_progress.eps}
+\caption{Bandwidth}
+\label{fig:time_plab}
+\end{figure}
 
 \section{Conclusion}
 \label{conclusions}
