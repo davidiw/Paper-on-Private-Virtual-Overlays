@@ -521,17 +521,11 @@ When overlays are small and have significant churn, it is easy for data stored
 in the overlay's DHT to be lost.  This can be improved by also supporting
 broadcast in the private overlay.  In this model, each peer acts as a
 storage point for all data critical to itself.  If another peer cannot
-successfully find data stored at a specific key in the overlay, it can use
-MapReduce to broadcast the request to the entire overlay in an attempt to find
-the result.  We present a comparison of the time and network cost for both
-approaches in Figure~\ref{fig:broadcast_cost}.
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=2.75in]{in_progress.eps}
-\caption{Broadcast cost.}
-\label{fig:broadcast_cost}
-\end{figure}
+successfully find data stored at a specific key in the overlay, it can make
+use of broadcast over the entire overlay in an attempt to find
+the result.  The technical details of our broadcast implementation along with
+a comparison between our Dht and broadcast can be found in
+Section~\ref{evaluation_revocation}.
 
 During our evalution, we discovered that in certain cases the private overlay
 would not form a proper well-formed state but rather more than one distinct or
@@ -642,23 +636,11 @@ that all peers in the system do know about the revocation.  The strength of
 the DHT approach exists when using a public free-to-join and an application
 secured by the group, as in~\cite{nsdi10}.
 
-In Figure~\ref{fig:broadcast_revocation}, we present the cost of revoking a
-peer in varying sized networks.  To evaluate the cost, we estimate that the
-average size of a revocation is 300 bytes, which includes information such
-as the user's name, the group, time of revocation, and a signature from the
-CA's private key.  We then evaluate the bandwidth and latency cost using a
-network modeler that reuses the same code base, i.e. routing tables and routing
-algorithms, as our structured P2P overlay software.  For latency estimation,
-we apply the MIT King data set~\cite{king_data}.
+In Section~\ref{evaluation_revocation}, we present more technical details and
+an evaluation with focus on latency and bandwidth of these three methods.  
 
-\begin{figure}[h]
-\centering
-\includegraphics[width=2.75in]{in_progress.eps}
-\caption{Broadcast revocation.}
-\label{fig:broadcast_revocation}
-\end{figure}
-
-Because the security framework is based on PKI, another approach that is also supported is the use of certificate revocation lists
+Because the security framework is based on PKI, another approach that is also
+supported is the use of certificate revocation lists
 (CRL) found in most CA systems.  The advantage of a CRL and revoking individual
 certificates is the ability to remove a subset of a user's node, particularly
 useful in the case that the user was not malicious but that some of their nodes
@@ -970,6 +952,23 @@ Figure~\ref{fig:bandwidth_plab} and Figure~\ref{fig:time_plab}, respectively.
 \includegraphics[width=2.75in]{in_progress.eps}
 \caption{Bandwidth}
 \label{fig:time_plab}
+\end{figure}
+
+\subsection{Evaluating Revocation Implementations}
+In Figure~\ref{fig:broadcast_revocation}, we present the cost of revoking a
+peer in varying sized networks.  To evaluate the cost, we estimate that the
+average size of a revocation is 300 bytes, which includes information such
+as the user's name, the group, time of revocation, and a signature from the
+CA's private key.  We then evaluate the bandwidth and latency cost using a
+network modeler that reuses the same code base, i.e. routing tables and routing
+algorithms, as our structured P2P overlay software.  For latency estimation,
+we apply the MIT King data set~\cite{king_data}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=2.75in]{in_progress.eps}
+\caption{Broadcast revocation.}
+\label{fig:broadcast_revocation}
 \end{figure}
 
 \section{Conclusion}
