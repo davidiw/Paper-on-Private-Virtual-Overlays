@@ -41,7 +41,7 @@ bootstrapping in NAT-constrained environments.  Nonetheless, P2P systems can be 
 provide guaranteed look-up times, NAT traversal, point-to-point overlay
 security, and a distributed data store. In this paper we propose
 a novel way of creating overlays that are both secure and
-private and can be bootstraped from a public overlay.
+private and can be bootstrapped from a public overlay.
 Private overlay nodes use the public overlay's distributed data store to discover
 each other, and the public overlay's connections to assist with NAT hole punching
 and as relays providing STUN and TURN NAT traversal techniques.  The security
@@ -76,7 +76,7 @@ primarily for collaboration and sharing, including data storage, media
 sharing, chat, and system maintenance and monitoring.
 Applications that currently provide these functionalities fall into two
 categories:  anonymous, fully decentralized free-to-join P2P systems and
-distributed systems with P2P communcation that rely on a third party to provide
+distributed systems with P2P communication that rely on a third party to provide
 discovery and management.  While using a third party service provides a desirable
 level of trust for many users, it has significant drawbacks such as vendor lock-in,
 which may result in lost data, down time, and scalability constraints.
@@ -228,13 +228,13 @@ component of most structured P2P systems.
 There are two mechanisms for message routing in a P2P overlay: iterative or
 recursive.  In iterative routing, the sender of a packet will contact each
 successive member in a path directly until it find the destination node, at
-which point it sends the packet directly to the destinataion.  In recursive
+which point it sends the packet directly to the destination.  In recursive
 routing, messages are sent through the overlay via forwarding from one peer to
 the next until arriving at the destination.  Iterative routing can easily be
 secured using stream and datagram based security such as TLS~\cite{tls} and
 DTLS~\cite{dtls}, because the sender initiates all messages.  In contrast, in recursive routing, 
 EtE communication cannot be secured in the same fashion by the sender because 
-messages are routed through intermetiate nodes, rendering TLS and DTLS not
+messages are routed through intermediate nodes, rendering TLS and DTLS not
 easily applicable.
 
 \subsubsection{Private and Secure Overlay Subsets}
@@ -303,7 +303,7 @@ certificate revocation.
 
 Three approaches that propose a public overlay to create sub-overlays are
 \cite{one_ring}, \cite{randpeer}, and \cite{can_multicast}.
-The approach desribed in~\cite{one_ring} proposes the use of a universal overlay as a discovery plane for
+The approach described in~\cite{one_ring} proposes the use of a universal overlay as a discovery plane for
 service overlay.  The argument is that a participant of an overlay
 must support all services provided by that overlay such as multicast, DHT,
 or distributed search.  Our work has the same foundations as this paper, but
@@ -336,14 +336,14 @@ Other similar research attempts to create trusted systems~\cite{stone, tor} but
 with anonymous members, though it could be reasonably argued these services are
 not applicable to small or medium business, which would prefer to have a private
 overlay.  None of the works discuss how to apply such models to
-systems that are contrained in network connectivity, e.g by NATs.
+systems that are constrained in network connectivity, e.g by NATs.
 
 \section{Bootstrapping Secure and Private Overlays}
 \label{contributions}
 In this section, we explain the individual components of our contribution.  We
 begin by describing how apply a DTLS-like protocol for EtE and PtP security in
 P2P systems. It leads to a discussion of using a group web interface to
-provide a user-friendly PKI, and conludes with our approach to bootstrapping
+provide a user-friendly PKI, and concludes with our approach to bootstrapping
 private and secure overlays in constrained environments using public overlays.
 DTLS is attractive because it supports the ability to handle situations where
 there are no guarantees about communication reliability: it handles both
@@ -400,7 +400,7 @@ should verify the certificate to ensure identity.
 
 Because EtE communication is application-specific, it requires
 a slightly different path.  For that purpose, we have a specific module that
-allows an application to request a secure EtE sender; the applicatoin needs to be prepared to deal with the
+allows an application to request a secure EtE sender; the application needs to be prepared to deal with the
 process of handling verification.  Once an application requests the sender, the
 module passes a sender / receiver model to the security handler, like in the PtP
 process.  Once the security initialization has completed, the
@@ -420,7 +420,7 @@ an application should drop the packet.
 Since UDP is connectionless, applications that use it can easily be victims of
 denial of service attacks.  This is because packets sent to the receiver can
 have a spoofed source address, unless the outgoing gateway prevents this from
-occurring.  Whereas with TCP, it would be signficantly harder to perform the
+occurring.  Whereas with TCP, it would be significantly harder to perform the
 same attack unless performed as a man-in-the-middle.  To reduce the potential
 of these spoofing attacks prior to establishing a secure connection, DTLS (like
 Photuris~\cite{photuris}) uses a stateless cookie for each remote peer.  In
@@ -503,7 +503,7 @@ connections for each additional private overlay.  For this, we propose the use o
 {\em pathing}, which multiplex a single UDP or TCP socket to support multiple
 overlay nodes.  This model is supported because of the abstraction done on
 senders and receivers.  Thus a UDP or TCP connection can be easily wrapped 
-inside an abitrary packet, in this case, a pathing connection.  Upon sending
+inside an arbitrary packet, in this case, a pathing connection.  Upon sending
 a packet, the message is prepended with path information.  When the remote side
 receives a packet, it parses and removes this pathing information and relays it
 to the appropriate receiver, i.e., overlay node.  We validate this approach in
@@ -519,14 +519,14 @@ the result.  The technical details of our broadcast implementation are described
 at the end of Section~\ref{implementation} and an evaluation of our revocation
 approaches can be found in Section~\ref{evaluation_revocation}.
 
-During our evalution, we discovered that in certain cases the private overlay
+During our evaluation, we discovered that in certain cases the private overlay
 would not form a proper well-formed state but rather more than one distinct or
 partitioned overlays creating a fragmented overlay.  The underlying issue was that the
-pratitioned overlays believed they were in a well-formed state and thus never
+partitioned overlays believed they were in a well-formed state and thus never
 reviewed the DHT list to determine if there were peers that should be their
 neighbors.  This caused the overlay to remain fragmented until either a new
 peer joined or enough peers left causing the nodes to believe they are in a
-non-well-formed state adn require bootstrapping links or a more proactive 
+non-well-formed state and require bootstrapping links or a more proactive 
 method.  The reason the issue even existed was that states of significant churn,
 especially during a bootstrapping of a significant amount of new nodes in the
 system, the DHT list can become unstable with each set of node potentially
@@ -697,7 +697,7 @@ failed NAT traversal attempts via relaying.
 
 \subsection{Multicast}
 The topic of secure multicast has been a focus of much research citations.
-Using an approach similator to CAN~\cite{can_multicast}, a private ring can form
+Using an approach similar to CAN~\cite{can_multicast}, a private ring can form
 a ring where all nodes are members of the multicast group with the additional
 feature that you can trust that your audience is limited to those in the
 overlay.  The main advantage of such multicasting technologies would be for
@@ -715,7 +715,7 @@ overlay followed by evaluation to quantify network overheads.
 \label{implementation}
 Our implementation uses the Brunet~\cite{brunet} library, which is a P2P system
 based upon the concepts introduced by Symphony~\cite{symphony}.  Its topology is a
-one-dimenesional ring, where peers connect with up to the four peers closest
+one-dimensional ring, where peers connect with up to the four peers closest
 to themselves in both directions in the node ID space.  Shortcuts are based
 upon a harmonic distribution and the use of of proximity~\cite{hpdc08_0}.  The
 system supports distributed versions of STUN or hole-punching and TURN-like or
@@ -733,7 +733,7 @@ In the previous sections, we have abstracted the implementation to generic
 overlays, while in this section, we will present our experiences and lessons
 learned in applying security protocols to the overlay.  To provide security, we
 investigated two approaches:  reusing OpenSSL's DTLS implementation or making
-our own platform-independent DTLS using C\# and crytography routines provided
+our own platform-independent DTLS using C\# and cryptography routines provided
 by .NET.  Because we are sending messages over unreliable mediums such as UDP
 sockets, relays, and an overlay, we could not reuse SSL or TLS.  Additionally
 we want EtE security for relays and overlay communication, the security needed
@@ -749,7 +749,7 @@ binary can run on any platform.  To use unmanaged libraries from a managed
 language requires a marshaling wrapper to handle the translation; there is
 such a wrapper for OpenSSL~\cite{openssl.net}.  A constraint we found when
 using the library was the naming of the OpenSSL libraries was not consistent
-across platforms and, additonally, Windows lacked a formal installation method.
+across platforms and, additionally, Windows lacked a formal installation method.
 In using the OpenSSL library with DTLS, in version 0.9.8k, renegotiation of
 security parameters  was broken and would result in a deadlocked DTLS session,
 whereas in 1.0.0-beta3 (the latest released beta) DTLS renegotiation worked;
@@ -852,7 +852,7 @@ OpenSSL DTLS stack.
 
 An important component of security is the handling of revocations handled by our
 broadcasting mechanism.  We call our broadcasting model bounded-broadcast.
-Bounded broacast works by...  Bounded broadcast is similar to previous research...
+Bounded broadcast works by...  Bounded broadcast is similar to previous research...
 For security purposes, we have modified bounded broadcast to avoid the revoked
 peers when sending a revocation message.  This is done by ...
 
@@ -867,7 +867,7 @@ in the system prior to testing out on real systems, such as PlanetLab, as well
 as to perform experiments in a controlled environment, which simplifies the
 evaluation while faithfully modeling the overlay behavior.  We employ the MIT
 King data set~\cite{king_data} to determine the pairwise latency between nodes.
-The MIT King data set consits of latency between DNS servers distributed
+The MIT King data set consists of latency between DNS servers distributed
 globally on the Internet.  To run the simulations, we employed
 Archer~\cite{archer}, which uses our P2P VPN software to form a distributed and
 decentralized computing grid for research into computer architecture.
@@ -889,20 +889,20 @@ it take for a node to become connected to the public overlay and then for a
 subsequent node to become connected to the private overlay.  By connected, we
 mean a node has a connection with the nodes whose IDs are closest both smaller
 than and larger than the node who is joining.  The results of this experiment
-will show the time it takes to connect to a public overlay, obtain a Dht get
+will show the time it takes to connect to a public overlay, obtain a DHT get
 result, and then connect to a private overlay with and without security.
 
 To summarize the connection process, we first boot the public node.  Upon
-becoming connected, the private node would first insert into the Dht its 
+becoming connected, the private node would first insert into the DHT its 
 subring information using an automated lease extender.  Afterwards, we
-started the private node and began constantly querying the Dht key for other
+started the private node and began constantly querying the DHT key for other
 nodes information.  As soon as we got a result, it was appended to the list of
 nodes for the state machine to attempt connecting with.  Once the state machine
 believed it was connected, the test was terminated.  The reason for starting
 the private node after the public node was due in part to earlier experiments.
 We noticed that starting the public and private overlays at the same time took
 longer due to the state machines in the private node using an exponential time
-backoffs of up to a minute when unable to retrieve the Dht keys.
+back-offs of up to a minute when unable to retrieve the DHT keys.
 
 For PlanetLab, we created several overlays with random distribution of private
 nodes.  We used the assumption that we can typically get a base network of
@@ -923,7 +923,7 @@ pool of 700 public nodes and 2 to 500 members in the private overlay.  We then
 waited for the overlays to become fully connected, whereupon we waited 60
 simulated minutes to ensure that the system was at steady state, i.e., trimming
 unnecessary connections and having a steady state machine.  At which point, we
-added an additional public node with a matchin private node.  We took time
+added an additional public node with a matching private node.  We took time
 snapshots of how long they took to become connected.
 
 \begin{figure}[h]
@@ -946,12 +946,12 @@ has not changed.  This is evident in the simulator but PlanetLab shows
 some instability.  It would appear that when dealing with smaller private
 overlays, in the order of 100s connection time would be dominated by the
 time to connect to the public overlay.  Another important result is that
-security does not significantly add delay for itme to connect, in both
+security does not significantly add delay for time to connect, in both
 Simulated and PlanetLab, it is on the order of 5 to 10 seconds.  As as side
 note, it appears that in smaller PlanetLab based networks, the system has
 higher noise as individual systems have greater effect on end results.
 
-\subsection{Instanteous Pool Creation}
+\subsection{Instantaneous Pool Creation}
 In this experiment, we determine the amount of time required to bootstrap a
 private overlay including their matching public overlay nodes using an existing
 network.  We start with a network size of 200 public nodes and then add the
@@ -1033,7 +1033,7 @@ We present CPU, memory, and network in Figure~\ref{fig:pathing_eval}.
 \begin{figure}[h]
 \centering
 \includegraphics[width=2.75in]{in_progress.eps}
-\caption{Pathing evalution.}
+\caption{Pathing evaluation.}
 \label{fig:pathing_eval}
 \end{figure}
 
@@ -1048,7 +1048,7 @@ like a DHT, so that peers of the private system can rendezvous with each other.
 For constrained environments, we used NAT traversal techniques like STUN and
 TURN with both private and public overlays supporting the relaying of packets.
 We evaluated the use of DTLS in our system and presented an improved CBC
-mode of operation for use in datagram systems that significantly speeded up our
+mode of operation for use in datagram systems that significantly sped up our
 implementation.  To deal with excessive amounts of sockets, we introduced the
 notion of pathing, which showed that system resource consumption can be reduced
 with negligible effect on network performance.  Most importantly, we presented
