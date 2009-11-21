@@ -928,20 +928,28 @@ snapshots of how long they took to become connected.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=2.75in]{in_progress.eps}
-\caption{Single Node Join}
+\includegraphics[width=3.25in]{single_join.eps}
+\caption{The time it takes for a single node joining a public overlay and then
+a private overlay, note the time required for the private overlay includes the
+time for joining the public overlay.  The acronyms are defined as such:  ABcD,
+where A = S or P for Simulated or PlanetLab, Bc = Pu or Pr for Public or Private,
+and D = N or S for no security on the private overlay or security on the private
+overlay.  Therefore the acronym PPrN represents "PlanetLab", "Private", "No
+Private overlay security", whereas SPuS represents "Simulated', "Public",
+"Private overlay security".}
 \label{fig:single_join}
 \end{figure}
 
-Our results are presented in Figured~\ref{fig:single_join}.  It appears that
-both the estimated, simulated, and real results all have similar slopes.
-Thus it should be expected that the time necessary to form a connection to
-a private overlay is effectively the time it takes to connect to the public
-overlay, perform a Dht get on the public overlay, and then the time of
-performing standard connection to the private overlay.  Though we expected
-nothing unusual during the security handshaking, it is interesting to note
-how all results have nearly identical slope and that securing the overlay
-does not connecting with it slower.
+Our results are presented in Figured~\ref{fig:single_join}.  The time to
+connect to the public overlay should remain somewhat constant as the system
+has not changed.  This is evident in the simulator but PlanetLab shows
+some instability.  It would appear that when dealing with smaller private
+overlays, in the order of 100s connection time would be dominated by the
+time to connect to the public overlay.  Another important result is that
+security does not significantly add delay for itme to connect, in both
+Simulated and PlanetLab, it is on the order of 5 to 10 seconds.  As as side
+note, it appears that in smaller PlanetLab based networks, the system has
+higher noise as individual systems have greater effect on end results.
 
 \subsection{Instanteous Pool Creation}
 In this experiment, we determine the amount of time required to bootstrap a
@@ -956,13 +964,18 @@ minutes of the last host's overlay software starting.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=2.75in]{in_progress.eps}
-\caption{1000 Node Join}
+\includegraphics[width=3.25in]{mass_join.eps}
+\caption{The time it takes for various sized pools to instantaneously form
+on a public overlay with 200 nodes.}
 \label{fig:big_join}
 \end{figure}
 
 In Figure~\ref{fig:big_join}, we present our results with and without security
-for various sized networks.
+for various sized networks.  The results present a slightly different picture
+than the previous experiment.  In this case, there is a slightly logarithmic
+growth to the time it takes to complete an overlay.  As in the previous test,
+the use of security is even more negligible in terms of the overall time to
+form the ring.
 
 \subsection{Measuring Bandwidth}
 The previous simulation experiments, were in fact ran during the same test, but
@@ -974,12 +987,17 @@ Figure~\ref{fig:bandwidth}.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=2.75in]{in_progress.eps}
-\caption{Bandwidth}
+\includegraphics[width=3.25in]{bandwidth.eps}
+\caption{Bandwidth used in the system during steady state operations consisting
+of 200 public nodes and various sized paired public / private nodes.}
 \label{fig:bandwidth}
 \end{figure}
 
-Some text.
+While it may appear that bandwidth is growing quickly, at a network size of
+500 public and 300 private nodes, the average bandwidth per node is actually
+pretty small at approximately .5 KB/s and .53 KB/s without and with security.
+Another nice result is that the use of security does not add significant
+amount of extra bandwidth and is pretty negligible.
 
 \subsection{Evaluating Revocation Implementations}
 \label{evaluation_revocation}
