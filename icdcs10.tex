@@ -24,7 +24,7 @@
 \title{Virtual Private Overlays: Secure Group Communication over Decentralized
 Public Overlays in NAT-Constrained Environments}
 
-\author{\IEEEauthorblockN{David Isaac Wolinsky and Renato Figueiredo} 
+\author{\IEEEauthorblockN{David Isaac Wolinsky and Kyungyong Lee and Tae Woong Choi and P. Oscar Boykin and Renato Figueiredo} 
 \IEEEauthorblockA{Advanced Computing Information Systems Lab\\
 University of Florida}
 }
@@ -506,16 +506,8 @@ senders and receivers.  Thus a UDP or TCP connection can be easily wrapped
 inside an abitrary packet, in this case, a pathing connection.  Upon sending
 a packet, the message is prepended with path information.  When the remote side
 receives a packet, it parses and removes this pathing information and relays it
-to the appropriate receiver, i.e., overlay node.  To validate this approach, we
-present the tradeoffs in Figure~\ref{fig:pathing_eval}, which
-presents the network latency versus memory costs, for various sized pathing systems.
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=2.75in]{in_progress.eps}
-\caption{Pathing evalution.}
-\label{fig:pathing_eval}
-\end{figure}
+to the appropriate receiver, i.e., overlay node.  We validate this approach in
+Section~\ref{pathing_evaluation}.
 
 When overlays are small and have significant churn, it is easy for data stored
 in the overlay's DHT to be lost.  This can be improved by also supporting
@@ -523,9 +515,9 @@ broadcast in the private overlay.  In this model, each peer acts as a
 storage point for all data critical to itself.  If another peer cannot
 successfully find data stored at a specific key in the overlay, it can make
 use of broadcast over the entire overlay in an attempt to find
-the result.  The technical details of our broadcast implementation along with
-a comparison between our Dht and broadcast can be found in
-Section~\ref{evaluation_revocation}.
+the result.  The technical details of our broadcast implementation are described
+at the end of Section~\ref{implementation} and an evaluation of our revocation
+approaches can be found in Section~\ref{evaluation_revocation}.
 
 During our evalution, we discovered that in certain cases the private overlay
 would not form a proper well-formed state but rather more than one distinct or
@@ -717,9 +709,10 @@ audio and video.
 \section{Implementation Details and Evaluation}
 \label{evaluations}
 In this section, we describe our prototype implementation of a secure, private
-overlay followed by evaluation to quantify network, memory, and CPU overheads.
+overlay followed by evaluation to quantify network overheads.
 
 \subsection{Our Implementation -- Brunet}
+\label{implementation}
 Our implementation uses the Brunet~\cite{brunet} library, which is a P2P system
 based upon the concepts introduced by Symphony~\cite{symphony}.  Its topology is a
 one-dimenesional ring, where peers connect with up to the four peers closest
@@ -857,41 +850,81 @@ the user which protocol to use.  We believe home users and those interested in
 testing the system will start with the .NET security stack and migrate to the
 OpenSSL DTLS stack.
 
-\subsection{Exploring Overheads Using Simulations}
-In this section, we evaluate the bandwidth consumed by our private overlay model
-and the amount of real time it takes for a node to achieve overlay connectivity.  To simulate our
-system, we have developed a module that applies an event-driven time simulation to our
-P2P software.  This allows us to verify correct behavior in the system prior to
-testing out on real systems, such as PlanetLab, as well as to perform experiments in a
-controlled environment, simplifying the evaluation while faithfully modeling the overlay behavior.
+An important component of security is the handling of revocations handled by our
+broadcasting mechanism.  We call our broadcasting model bounded-broadcast.
+Bounded broacast works by...  Bounded broadcast is similar to previous research...
+For security purposes, we have modified bounded broadcast to avoid the revoked
+peers when sending a revocation message.  This is done by ...
 
-In this experiment, we will determine 1) time to bootstrap a large amount of
-peers into the private overlay, 2) time to add one additional peer to a steady-state
-system, and 3) bandwidth used by the system over the experiment.  To understand
-the cost of using security, we evaluate the system when the private overlay has
-PtP security disabled and enabled.
+\subsection{Evaluation Tools and Environments}
+For evaluation, we use to methods to evaluate behavior:  a simulator and a real
+system, PlanetLab~\cite{planetlab}.
 
-The steps in the experiment follow:  We start with a base system where
-there are 20 nodes in a well-formed public pool that are in steady-state, that is
-60 minutes after they have a well-formed overlay.  We then introduce 500 peers
-with some subset joining a monitored private overlay.  Our simulations were
-limited to 500 nodes due to the resource requirements  necessary to simulate a
-system where there are over 500 privately secured nodes and 500 public nodes.
-We measure the time to
-bring the public overlay back to a well-formed state as well as the time to form
-the private overlay, presented in Figure~\ref{fig:big_join}.  At which point, we
-wait another 60 minutes for steady-state to occur in both systems and we add a
-new node that joins both the public and private overlays and measure the time
-for both, presented in Figure~\ref{fig:single_join}.  Thereupon, we calculate the
-bandwidth of the system for the entire time and end the simulation, presented in
-Figure~\ref{fig:bandwidth}.
+\subsubsection{Simulations}
+To simulate our system, we have developed a module that applies an event-driven
+time simulation to our P2P software.  This allows us to verify correct behavior
+in the system prior to testing out on real systems, such as PlanetLab, as well
+as to perform experiments in a controlled environment, which simplifies the
+evaluation while faithfully modeling the overlay behavior.  We employ the MIT
+King data set~\cite{king_data} to determine the pairwise latency between nodes.
+The MIT King data set consits of latency between DNS servers distributed
+globally on the Internet.  To run the simulations, we employed
+Archer~\cite{archer}, which uses our P2P VPN software to form a distributed and
+decentralized computing grid for research into computer architecture.
 
-\begin{figure}[h]
-\centering
-\includegraphics[width=2.75in]{in_progress.eps}
-\caption{1000 Node Join}
-\label{fig:big_join}
-\end{figure}
+\subsubsection{PlanetLab}
+PlanetLab~\cite{planetlab} consists of a consortium of research institutes sharing
+several hundred globally distributed network and computing resources.  PlanetLab
+provides a very interesting environment as there is constant unexpected churn
+of machines due to the extreme load placed on the resources and system restarts.
+Unlike our simulator, PlanetLab gives us a glimpse of what to expect from the
+P2P software stack when used in more typical environments providing a clearer
+user perception and experience.  Due to the time required and complexities in
+working with PlanetLab, we limit the number of experiments we used it for,
+focusing on the connection time to a private overlay.
+
+\subsection{Connecting to the Private Overlay}
+In this experiment, we seek to determine how long from starting the process will
+it take for a node to become connected to the public overlay and then for a
+subsequent node to become connected to the private overlay.  By connected, we
+mean a node has a connection with the nodes whose IDs are closest both smaller
+than and larger than the node who is joining.  The results of this experiment
+will show the time it takes to connect to a public overlay, obtain a Dht get
+result, and then connect to a private overlay with and without security.
+
+To summarize the connection process, we first boot the public node.  Upon
+becoming connected, the private node would first insert into the Dht its 
+subring information using an automated lease extender.  Afterwards, we
+started the private node and began constantly querying the Dht key for other
+nodes information.  As soon as we got a result, it was appended to the list of
+nodes for the state machine to attempt connecting with.  Once the state machine
+believed it was connected, the test was terminated.  The reason for starting
+the private node after the public node was due in part to earlier experiments.
+We noticed that starting the public and private overlays at the same time took
+longer due to the state machines in the private node using an exponential time
+backoffs of up to a minute when unable to retrieve the Dht keys.
+
+For PlanetLab, we created several overlays with random distribution of private
+nodes.  We used the assumption that we can typically get a base network of
+600 nodes on PlanetLab then had each node randomly decide to join the private
+overlay in order to obtain private overlays consisting of 5 to 600 members.  We
+crawled the network to verify the amount of private overlay nodes.  Then we began
+the experiment by connecting to the ring from the same network location 100 times
+using a different node ID each time causing the node to join different peers and
+create an distribution of connection times, during which, we noted the time it
+took for the public node and private nodes to become connected.  To ensure that
+PlanetLab was fully connected, we waited an hour prior to starting the
+experiments.  Though in practical testing, we have seen a pool form a complete
+ring in the order of minutes.
+
+For Simulation, we followed similar steps though we were able to tighten the
+exact amount of peers in both the public and private overlays.  We began with a
+pool of 700 public nodes and 2 to 500 members in the private overlay.  We then
+waited for the overlays to become fully connected, whereupon we waited 60
+simulated minutes to ensure that the system was at steady state, i.e., trimming
+unnecessary connections and having a steady state machine.  At which point, we
+added an additional public node with a matchin private node.  We took time
+snapshots of how long they took to become connected.
 
 \begin{figure}[h]
 \centering
@@ -900,6 +933,45 @@ Figure~\ref{fig:bandwidth}.
 \label{fig:single_join}
 \end{figure}
 
+Our results are presented in Figured~\ref{fig:single_join}.  It appears that
+both the estimated, simulated, and real results all have similar slopes.
+Thus it should be expected that the time necessary to form a connection to
+a private overlay is effectively the time it takes to connect to the public
+overlay, perform a Dht get on the public overlay, and then the time of
+performing standard connection to the private overlay.  Though we expected
+nothing unusual during the security handshaking, it is interesting to note
+how all results have nearly identical slope and that securing the overlay
+does not connecting with it slower.
+
+\subsection{Instanteous Pool Creation}
+In this experiment, we determine the amount of time required to bootstrap a
+private overlay including their matching public overlay nodes using an existing
+network.  We start with a network size of 200 public nodes and then add the
+nodes who will become part of the private overlay.  Because PlanetLab is
+difficult to control in terms of attempting to start 200 public nodes
+simultaneously and ensuring that they do not restart mid-experiment, we ran
+this experiment using the simulator.  Though we can state from previous
+experience, that using PlanetLab, we typically see a network form within
+minutes of the last host's overlay software starting.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=2.75in]{in_progress.eps}
+\caption{1000 Node Join}
+\label{fig:big_join}
+\end{figure}
+
+In Figure~\ref{fig:big_join}, we present our results with and without security
+for various sized networks.
+
+\subsection{Measuring Bandwidth}
+The previous simulation experiments, were in fact ran during the same test, but
+in order to ensure stability, we always wait 60 virtual minutes before proceeding
+to the next step.  Reusing the simulation results changes no results and cuts
+down on the most expensive part of the procedure, the bootstrap phase.  In this
+section, we present the network bandwidth used by each process, see
+Figure~\ref{fig:bandwidth}.
+
 \begin{figure}[h]
 \centering
 \includegraphics[width=2.75in]{in_progress.eps}
@@ -907,62 +979,17 @@ Figure~\ref{fig:bandwidth}.
 \label{fig:bandwidth}
 \end{figure}
 
-\subsection{Exploring Overheads Using PlanetLab}
-For this experiment, we take the code used in simulation and deploy it in a
-real environment, PlanetLab.  PlanetLab~\cite{planetlab} consists of a
-consortium of research institutes sharing several hundred globally distributed
-network and computing resources.  PlanetLab provides a very interesting
-environment as there is constant unexpected churn of machines due to the
-extreme load placed on the resources and system restarts.  Unlike our
-simulations done in the previous experiment, this experiment will give us a
-glimpse of what to expect from the P2P software stack when used in more typical
-environments.  As such our experiments for this section focus on user perception
-and experience.
-
-In this experiment, we will evaluate the bandwidth used by an abitrary sized
-system over the course of 24 hours.  Afterwards, we will determine the time
-required to properly connect to the overlay, which is not the same measurement
-used in the simulation.  In the simulation, we measured the time for the network
-to return to a complete state, in the case of a real system, this state becomes
-very difficult to obtain, as such we focus only on the local nodes perception of
-connectivity.  While we attempt to place as many peers into the system, due to
-the fact that PlanetLab nodes may be on or off, power cycled, or even
-disconnected at any time, we cannot make guarantees about the size of the
-network.  As such, we attempt to install the package on every PlanetLab node and
-at the end of the experiment, review the results for only those nodes which
-remained connected for the entire 24 hour period.
-
-On average, a PlanetLab system usually has around 500 nodes online after 24
-hours.  Using this approximation, we configured the system to support 25 groups
-with an average of 20 participants each.  This causes a distribution of having
-each peer in the public pool be a member of one of the private groups.  We
-repeat the experiment with and without secure private overlays enabled.  The
-results for bandwidth and connection time are presented in
-Figure~\ref{fig:bandwidth_plab} and Figure~\ref{fig:time_plab}, respectively.
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=2.75in]{in_progress.eps}
-\caption{Single Node Join}
-\label{fig:bandwidth_plab}
-\end{figure}
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=2.75in]{in_progress.eps}
-\caption{Bandwidth}
-\label{fig:time_plab}
-\end{figure}
+Some text.
 
 \subsection{Evaluating Revocation Implementations}
+\label{evaluation_revocation}
 In Figure~\ref{fig:broadcast_revocation}, we present the cost of revoking a
 peer in varying sized networks.  To evaluate the cost, we estimate that the
 average size of a revocation is 300 bytes, which includes information such
 as the user's name, the group, time of revocation, and a signature from the
 CA's private key.  We then evaluate the bandwidth and latency cost using a
 network modeler that reuses the same code base, i.e. routing tables and routing
-algorithms, as our structured P2P overlay software.  For latency estimation,
-we apply the MIT King data set~\cite{king_data}.
+algorithms, as our structured P2P overlay software.  
 
 \begin{figure}[h]
 \centering
@@ -970,6 +997,29 @@ we apply the MIT King data set~\cite{king_data}.
 \caption{Broadcast revocation.}
 \label{fig:broadcast_revocation}
 \end{figure}
+
+Some concluding remarks.
+
+\subsection{Multiplexing Sockets}
+If systems were to start making heavy use of the private overlay model, the most
+straightforward and simple approach would be to have many sockets and threads to
+constantly read from them.  One option is to make a multisocket device and use
+select, but that requires a unique solution for each socket type.  As we
+discussed early, we proposed an approach whereby an abstracted transport could
+easily be multiplexed without the need for additional threads, sockets, and other
+resources.  We call this pathing and what we do is prepend each packet with a
+unique ID to differentiate the owner.  So while it may reduce system resource
+consumption it may increase network consumption, so we test it to determine both.
+We present CPU, memory, and network in Figure~\ref{fig:pathing_eval}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=2.75in]{in_progress.eps}
+\caption{Pathing evalution.}
+\label{fig:pathing_eval}
+\end{figure}
+
+Some concluding remarks.
 
 \section{Conclusion}
 \label{conclusions}
