@@ -24,7 +24,7 @@
 \title{Virtual Private Overlays: Secure Group Communication over Decentralized
 Public Overlays in NAT-Constrained Environments}
 
-\author{\IEEEauthorblockN{David Isaac Wolinsky and Kyungyong Lee and Tae Woong Choi and P. Oscar Boykin and Renato Figueiredo} 
+\author{\IEEEauthorblockN{David Isaac Wolinsky, Kyungyong Lee, Tae Woong Choi, P. Oscar Boykin, and Renato Figueiredo} 
 \IEEEauthorblockA{Advanced Computing Information Systems Lab\\
 University of Florida}
 }
@@ -232,10 +232,10 @@ which point it sends the packet directly to the destination.  In recursive
 routing, messages are sent through the overlay via forwarding from one peer to
 the next until arriving at the destination.  Iterative routing can easily be
 secured using stream and datagram based security such as TLS~\cite{tls} and
-DTLS~\cite{dtls}, because the sender initiates all messages.  In contrast, in recursive routing, 
-EtE communication cannot be secured in the same fashion by the sender because 
-messages are routed through intermediate nodes, rendering TLS and DTLS not
-easily applicable.
+DTLS~\cite{dtls}, because the sender initiates all messages.  In contrast, in
+recursive routing, EtE communication cannot be secured in the same fashion by
+through socket-based TLS and DTLS, the sender because messages are routed
+through intermediate nodes.
 
 \subsubsection{Private and Secure Overlay Subsets}
 While EtE authentication and privacy is key for many applications, it does not increase the reliability of the structured
@@ -252,14 +252,23 @@ that multiplexes private overlays that provide the same abstraction of the under
 public overlay, and thus can reuse core overlay primitives without modifications.
 
 \subsubsection{NATs}
-Another key issue faced by P2P systems is the handling of NATs.  In environments
-where there are NATs, iterative routing can be significantly more difficult to
-deploy, since each message sent may require multiple NAT traversals.  With an
-added layer of security, iterative routing can become too expensive to
-deploy.   Additionally, TURN or relay style NAT traversal presents issues
-similar to EtE in recursive routing, where each node may authenticate
-itself with the relay, but they will not be able to easily use TLS and DTLS to
-verify each other.
+Another key issue faced by P2P systems is the handling of NATs.
+A recent study~\cite{p2p_nats} has shown that 30\%-40\% of nodes in P2P systems
+are behind NATs.  In environments where there are NATs, iterative routing can be
+significantly more difficult to deploy, since each message sent may require
+multiple NAT traversals.  There are a few types of NATs that can be traversed
+to support bidirectional communication through UDP-hole punching, known as STUN.
+The remaining categories of NATs either do not support UDP-hole punching due to
+how the NATs do port mapping or support only TCP communication and block all
+UDP communication.  In~\cite{tcp_nat}, the authors evaluated many common NAT
+boxes and determined that STUN works on approximately 70\% of NAT devices.
+Unlike UDP hole punching, most TCP techniques require either super-user access
+or be configured with external software packages that require super-user access.
+While the remaining device require an intermediary or relay to pass packets
+between the peers behind the NATs.  Though relays or TURN style NAT traversal
+presents issues similar to EtE communication in recursive routing, namely, each
+node will authenticate itself with the relay, but they will not readily be
+able to authenticate each other using socket-based TLS or DTLS.
 
 \subsection{Related Works}
 BitTorrent~\cite{bittorrent_security}, a P2P data sharing service,  supports
@@ -341,13 +350,14 @@ systems that are constrained in network connectivity, e.g by NATs.
 \section{Bootstrapping Secure and Private Overlays}
 \label{contributions}
 In this section, we explain the individual components of our contribution.  We
-begin by describing how apply a DTLS-like protocol for EtE and PtP security in
+begin by describing how apply SSL-like protocols for EtE and PtP security in
 P2P systems. It leads to a discussion of using a group web interface to
 provide a user-friendly PKI, and concludes with our approach to bootstrapping
 private and secure overlays in constrained environments using public overlays.
-DTLS is attractive because it supports the ability to handle situations where
-there are no guarantees about communication reliability: it handles both
-out-of-order and dropped packets.
+For overlay purposes, DTLS, an SSL derivative, is particularly attractive
+because it supports the ability to handle situations where there are no
+guarantees about communication reliability: it handles both out-of-order and
+dropped packets.
 
 
 \subsection{Secure Overlays}
@@ -856,9 +866,9 @@ Bounded broadcast works by...  Bounded broadcast is similar to previous research
 For security purposes, we have modified bounded broadcast to avoid the revoked
 peers when sending a revocation message.  This is done by ...
 
-\subsection{Evaluation Tools and Environments}
-For evaluation, we use to methods to evaluate behavior:  a simulator and a real
-system, PlanetLab~\cite{planetlab}.
+\subsection{Experimental Setup}
+We use two quantitative methods to evaluate our proposed approach: simulation and deployments on an actual
+wide-area system, PlanetLab~\cite{planetlab}.
 
 \subsubsection{Simulations}
 To simulate our system, we have developed a module that applies an event-driven
@@ -873,48 +883,49 @@ Archer~\cite{archer}, which uses our P2P VPN software to form a distributed and
 decentralized computing grid for research into computer architecture.
 
 \subsubsection{PlanetLab}
-PlanetLab~\cite{planetlab} consists of a consortium of research institutes sharing
-several hundred globally distributed network and computing resources.  PlanetLab
+PlanetLab~\cite{planetlab} is a consortium of research institutes sharing
+hundreds of globally distributed network and computing resources.  PlanetLab
 provides a very interesting environment as there is constant unexpected churn
 of machines due to the extreme load placed on the resources and system restarts.
-Unlike our simulator, PlanetLab gives us a glimpse of what to expect from the
-P2P software stack when used in more typical environments providing a clearer
-user perception and experience.  Due to the time required and complexities in
+Complementary to simulation, PlanetLab gives us a glimpse of what to expect from the
+P2P software stack when used in an actual environment subject to higher variance due to resource contention and churn.
+Due to the time required and complexities in
 working with PlanetLab, we limit the number of experiments we used it for,
 focusing on the connection time to a private overlay.
 
 \subsection{Connecting to the Private Overlay}
-In this experiment, we seek to determine how long from starting the process will
-it take for a node to become connected to the public overlay and then for a
+In this experiment, we seek to determine the overall time
+it takes for a node to become connected to the public overlay, and then for a
 subsequent node to become connected to the private overlay.  By connected, we
-mean a node has a connection with the nodes whose IDs are closest both smaller
-than and larger than the node who is joining.  The results of this experiment
-will show the time it takes to connect to a public overlay, obtain a DHT get
-result, and then connect to a private overlay with and without security.
+mean a node has a connection with the nodes whose IDs are closest in the ring (i.e., neighbors with IDs both smaller
+than and larger than the node who is joining).  The results of this experiment
+show the time it takes to connect to a public overlay, query the DHT for private overlay
+information, and then connect to a private overlay with and without security.
 
 To summarize the connection process, we first boot the public node.  Upon
-becoming connected, the private node would first insert into the DHT its 
+becoming connected, the private node first inserts into the DHT its 
 subring information using an automated lease extender.  Afterwards, we
-started the private node and began constantly querying the DHT key for other
-nodes information.  As soon as we got a result, it was appended to the list of
+start the private node and begin constantly querying the DHT key for information
+from other nodes.  As soon as this is retrieved from the DHT, it is appended to the list of
 nodes for the state machine to attempt connecting with.  Once the state machine
-believed it was connected, the test was terminated.  The reason for starting
+reaches a connected state, the test is terminated.  The reason for starting
 the private node after the public node was due in part to earlier experiments.
 We noticed that starting the public and private overlays at the same time took
-longer due to the state machines in the private node using an exponential time
+longer due to the state machines in the private node using exponential time
 back-offs of up to a minute when unable to retrieve the DHT keys.
 
 For PlanetLab, we created several overlays with random distribution of private
-nodes.  We used the assumption that we can typically get a base network of
+nodes.  We start from a base network of
 600 nodes on PlanetLab then had each node randomly decide to join the private
 overlay in order to obtain private overlays consisting of 5 to 600 members.  We
 crawled the network to verify the amount of private overlay nodes.  Then we began
 the experiment by connecting to the ring from the same network location 100 times
-using a different node ID each time causing the node to join different peers and
-create an distribution of connection times, during which, we noted the time it
+using a different node ID each time, causing the node to join different peers and
+create an distribution of connection times. During this process, we measured the time it
 took for the public node and private nodes to become connected.  To ensure that
-PlanetLab was fully connected, we waited an hour prior to starting the
-experiments.  Though in practical testing, we have seen a pool form a complete
+the PlanetLab public overlay was fully connected, we waited an hour prior to starting the
+experiments to provide enough time for it to reach steady state. This is a conservative
+value, in our experience with overlays we run on PlanetLab, pools of this size form a complete
 ring in the order of minutes.
 
 For Simulation, we followed similar steps though we were able to tighten the
@@ -930,28 +941,29 @@ snapshots of how long they took to become connected.
 \centering
 \includegraphics[width=3.25in]{single_join.eps}
 \caption{The time it takes for a single node joining a public overlay and then
-a private overlay, note the time required for the private overlay includes the
-time for joining the public overlay.  The acronyms are defined as such:  ABcD,
-where A = S or P for Simulated or PlanetLab, Bc = Pu or Pr for Public or Private,
-and D = N or S for no security on the private overlay or security on the private
+a private overlay. Note that the time required for the private overlay includes the
+time for joining the public overlay.  The acronyms are defined with the following convention:  ABcD,
+where A = S for Simulated, P for PlanetLab, Bc = Pu for Public or Pr for Private,
+and D = N for no security on the private overlay or S for security on the private
 overlay.  Therefore the acronym PPrN represents "PlanetLab", "Private", "No
 Private overlay security", whereas SPuS represents "Simulated', "Public",
 "Private overlay security".}
 \label{fig:single_join}
 \end{figure}
 
-Our results are presented in Figured~\ref{fig:single_join}.  The time to
+Our results are presented in Figured~\ref{fig:single_join}.  It is expected that the time to
 connect to the public overlay should remain somewhat constant as the system
 has not changed.  This is evident in the simulator but PlanetLab shows
 some instability.  It would appear that when dealing with smaller private
-overlays, in the order of 100s connection time would be dominated by the
+overlays, in the order of 100s, the connection time would be dominated by the
 time to connect to the public overlay.  Another important result is that
-security does not significantly add delay for time to connect, in both
-Simulated and PlanetLab, it is on the order of 5 to 10 seconds.  As as side
-note, it appears that in smaller PlanetLab based networks, the system has
-higher noise as individual systems have greater effect on end results.
+security does not significantly add delay for time to connect; in both
+Simulated and PlanetLab, it is on the order of 5 to 10 seconds.  In smaller 
+PlanetLab based networks, the measurements have
+higher variance as individual systems have greater effect on end results.
 
 \subsection{Instantaneous Pool Creation}
+\label{mass_join}
 In this experiment, we determine the amount of time required to bootstrap a
 private overlay including their matching public overlay nodes using an existing
 network.  We start with a network size of 200 public nodes and then add the
@@ -974,11 +986,11 @@ In Figure~\ref{fig:big_join}, we present our results with and without security
 for various sized networks.  The results present a slightly different picture
 than the previous experiment.  In this case, there is a slightly logarithmic
 growth to the time it takes to complete an overlay.  As in the previous test,
-the use of security is even more negligible in terms of the overall time to
+the use of security has a small relative impact on the overall time to
 form the ring.
 
 \subsection{Measuring Bandwidth}
-The previous simulation experiments, were in fact ran during the same test, but
+The previous simulation experiments were in fact ran during the same test, but
 in order to ensure stability, we always wait 60 virtual minutes before proceeding
 to the next step.  Reusing the simulation results changes no results and cuts
 down on the most expensive part of the procedure, the bootstrap phase.  In this
@@ -988,16 +1000,33 @@ Figure~\ref{fig:bandwidth}.
 \begin{figure}[h]
 \centering
 \includegraphics[width=3.25in]{bandwidth.eps}
-\caption{Bandwidth used in the system during steady state operations consisting
-of 200 public nodes and various sized paired public / private nodes.}
+\caption{Bandwidth used in a systems with and with security during steady state
+operations consisting of 200 public nodes and various sized paired public /
+private nodes.  Those lines labeled "static" have DHT lists queried every 5
+minutes whereas the dynamic timeouts are queried on an exponential time scale
+starting at 30 seconds with a maximum of 60 minutes.}
 \label{fig:bandwidth}
 \end{figure}
 
-While it may appear that bandwidth is growing quickly, at a network size of
-500 public and 300 private nodes, the average bandwidth per node is actually
-pretty small at approximately .5 KB/s and .53 KB/s without and with security.
-Another nice result is that the use of security does not add significant
-amount of extra bandwidth and is pretty negligible.
+As shown in Figure~\ref{fig:bandwidth}, when using static timeouts bandwidth
+is dominated by the DHT as can be seen when compared to using the dynamic
+timeout, which during this evaluation only made a single DHT query since the
+system is in stated state.  In both cases, the time to form a complete ring
+as performed in Section~\ref{mass_join} performed the same.  Using dynamic
+timeouts the bandwidth grew slower than a logarithmic pace.  Given that the
+bandwidth used grows slowly, it appears that overlays in general use a negligible
+amounts of bandwidth and that even using security does not increase it
+significantly.
+
+In regards to selecting a proper timeout, it can logically be surmised that
+that if an existing public and private overlay are going through heavy churn,
+there will always be a base of nodes connected to each other.  If because the DHT
+is currently fragmented, a new node forms a partitioned private overlay, the node
+should eventually and quickly find out about the original overlay and reform
+the split overlays.  A dynamic timeout puts the weight for fixing ring partitions
+on the nodes that created them rather than the older more stable nodes.  Though
+it would appear that ring partitions occur most frequently during massive joins,
+which is solved by using both static and dynamic timeouts while querying.
 
 \subsection{Evaluating Revocation Implementations}
 \label{evaluation_revocation}
@@ -1019,6 +1048,7 @@ algorithms, as our structured P2P overlay software.
 Some concluding remarks.
 
 \subsection{Multiplexing Sockets}
+\label{pathing_evaluation}
 If systems were to start making heavy use of the private overlay model, the most
 straightforward and simple approach would be to have many sockets and threads to
 constantly read from them.  One option is to make a multisocket device and use
@@ -1042,24 +1072,26 @@ Some concluding remarks.
 \section{Conclusion}
 \label{conclusions}
 In this paper, we presented a novel architecture for deploying secure, private
-overlays in constrained environments through the use of a public overlay.
-The public overlay at a minimum need only to support a distributed data store,
+overlays in constrained environments through the use of public overlays.
+The public overlay at a minimum needs to support a distributed data store,
 like a DHT, so that peers of the private system can rendezvous with each other.
-For constrained environments, we used NAT traversal techniques like STUN and
+For constrained environments, we used NAT traversal techniques including STUN and
 TURN with both private and public overlays supporting the relaying of packets.
-We evaluated the use of DTLS in our system and presented an improved CBC
-mode of operation for use in datagram systems that significantly sped up our
-implementation.  To deal with excessive amounts of sockets, we introduced the
-notion of pathing, which showed that system resource consumption can be reduced
-with negligible effect on network performance.  Most importantly, we presented
-how a group infrastructure can be used as a user-friendly and intuitive
-mechanism to create and maintain trusted overlays.  For future work, we envision
-applying this approach to social networks and to establish multicast groups as
-done in~\cite{can}.
+We evaluated the use of DTLS in our system and, to deal with excessive amounts of
+sockets, we introduced the notion of pathing, which showed that system resource
+consumption can be reduced with negligible effect on network performance.  Most
+importantly, we presented how a group infrastructure can be used as a user-friendly
+and intuitive mechanism to create and maintain private and secure overlays.  
+For verification of usability, we show that the time to become connected to the
+private overlay occurs in less than 30 seconds and that the bandwidth required 
+from each peer while idling was insignificant, in the order of 100 bytes per
+second.  For future work, we envision applying this approach to social networks
+and to establish multicast groups as done in~\cite{can}.
 %\section*{Acknowledgment}
 
 \bibliographystyle{IEEEtran}
 \bibliography{icdcs10}
 \suppressfloats
+
 
 \end{document}
