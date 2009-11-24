@@ -17,7 +17,7 @@
 \usepackage{array}
 \usepackage{footnote}
 
-\widowpenalty=10000
+\widowpenalty=1000
 \clubpenalty=10000
 
 \begin{document}
@@ -802,18 +802,19 @@ which can be implemented in user code by monitoring time and received byte
 count.  Other operations such as certificate verification and cookie generation
 are handled by SSL callbacks, which hook into our security framework.
 
-\begin{figure}[h]
+\begin{figure}[!h]
 \centering
 \includegraphics[width=2.75in]{dtls_filter.eps}
-\caption{The DTLS filter.  To send a secure message, execute SSL\_write and
-retrieve the encrypted packet at the WRITE BIO via a BIO\_read.  To verify
-and decrypt a packet, execute BIO\_write on the READ BIO and retrieve the
-packet via SSL\_read.  When SSL\_write or SSL\_read return the error WANT\_READ.
-This means that either it is waiting for a control message or one is available
-at the WRITE BIO.  If a message is retrieved from the WRITE BIO, it is a control
-message.  Because DTLS does not provide reliability when using the memory BIO,
-control messages should be sent using a reliable medium, such as a light-weight
-request/reply system.}
+\caption{The DTLS filter.}
+%  To send a secure message, execute SSL\_write and
+%retrieve the encrypted packet at the WRITE BIO via a BIO\_read.  To verify
+%and decrypt a packet, execute BIO\_write on the READ BIO and retrieve the
+%packet via SSL\_read.  When SSL\_write or SSL\_read return the error WANT\_READ.
+%This means that either it is waiting for a control message or one is available
+%at the WRITE BIO.  If a message is retrieved from the WRITE BIO, it is a control
+%message.  Because DTLS does not provide reliability when using the memory BIO,
+%control messages should be sent using a reliable medium, such as a light-weight
+%request/reply system.}
 \label{fig:dtls_filter}
 \end{figure}
 
@@ -858,10 +859,29 @@ testing the system will start with the .NET security stack and migrate to the
 OpenSSL DTLS stack.
 
 An important component of security is the handling of revocations handled by our
-broadcasting mechanism.  We call our broadcasting model bounded-broadcast.
-Bounded broadcast works by...  Bounded broadcast is similar to previous research...
-For security purposes, we have modified bounded broadcast to avoid the revoked
-peers when sending a revocation message.  This is done by ...
+broadcasting mechanism.  Though we call our broadcasting model bounded-broadcast
+because it is capable of broadcasting to a subset of nodes, it is also capable
+of broadcasting to the entire overlay.  A bounded broadcast uses the following
+recursive algorithm:  Begin with node, $x$, triggering a broadcast message over
+the region $[x, y]$.  $x$ has $F$ connections to nodes in the range $[x, y]$.
+Denoting the $i^{th}$ such neighbor as $b_i$, the node $x$ sends a bounded
+broadcast over a sub-range, $[b_i, b_{i+1})$, to $b_i$, except the final
+neighbor.  Differently stated, $b_i$ is in charge of bounded-broadcasting 
+in the sub-range $[b_i, b_{i+1})$. If there is no connection to a node in the
+sub-range, the recursion has ended.  The final neighbor ($b_F$), $x$, sends a
+bounded broadcast to $[b_F, y]$.  When a node receives a message to a range
+that contains its own address the message is delivered to that node and then
+routed to others in that range.  Figure \ref{fig:tree} shows how this bounded
+broadcast forms a local tree recursively.   The time required for a bounded
+broadcast is $O(\log^2 N)$.  For security purposes, revoked peers are
+not included in the set of neighbors during the recursion stage.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=2.5in]{tree}
+\caption{Bounded Broadcast in range $[x, y]$}
+\label{fig:tree}
+\end{figure}
 
 \subsection{Experimental Setup}
 We use three quantitative methods to evaluate our proposed approach: network
@@ -982,7 +1002,7 @@ specifies whether the private overlay has security enabled.}
 \label{fig:single_join_mod}
 \end{figure}
 
-Our results, Figures~\ref{fig:single_join, ref:single_join_mod} are well
+Our results, Figures~\ref{fig:single_join},~\ref{fig:single_join_mod} are well
 correlated with near identical slopes.  In all cases the time to become
 connected with the private overlay remains reasonable and scales logarithmically
 as network size grows.  Connection times differ amongst the set, because
@@ -1104,10 +1124,10 @@ Some concluding remarks.
 \label{conclusions}
 In this paper, we presented a novel architecture for deploying secure, private
 overlays in constrained environments through the use of public overlays.
-The public overlay at a minimum needs to support a distributed data store,
+The public overlay at a minimum must provide a distributed data store,
 like a DHT, so that peers of the private system can rendezvous with each other.
 For constrained environments, we used NAT traversal techniques including STUN and
-TURN with both private and public overlays supporting the relaying of packets.
+TURN with both private and public overlays to support the relaying of packets.
 We evaluated the use of DTLS in our system and, to deal with excessive amounts of
 sockets, we introduced the notion of pathing, which showed that system resource
 consumption can be reduced with negligible effect on network performance.  Most
@@ -1115,12 +1135,12 @@ importantly, we presented how a group infrastructure can be used as a user-frien
 and intuitive mechanism to create and maintain private and secure overlays.  
 For verification of usability, we show that the time to become connected to the
 private overlay occurs in less than 30 seconds and that the bandwidth required 
-from each peer while idling was insignificant, in the order of 100 bytes per
-second.  For future work, we will consider the constraint that a user may not have
-the ability to host their own web server on the Internet and the steps necessary
-to make it accessible via a VPN or directly through the overlay.  Also, we
-envision applying this approach to social networks and to establish multicast
-groups as done in~\cite{can}.
+from each peer while idling was insignificant, on the order of 100 bytes per
+second.  For future work, we recognize the constraint imposed on a user that
+requires them to host their own web server on the Internet and will investigate
+steps that will make it accessible via a VPN or directly through the overlay.
+Also, we envision applying this approach to social networks and to establish
+multicast groups as done in~\cite{can}.
 %\section*{Acknowledgment}
 
 \bibliographystyle{IEEEtran}
