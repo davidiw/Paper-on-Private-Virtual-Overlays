@@ -46,11 +46,11 @@ Private overlay nodes use the public overlay's distributed data store to discove
 each other, and the public overlay's connections to assist with NAT hole punching
 and as relays providing STUN and TURN NAT traversal techniques.  The security
 framework utilizes groups, which are created and managed by users through
-a web interface that can be hosted on the Internet or the public overlay.
+a web interface that can be hosted on the Internet.
 Each group acts as a Public Key Infrastructure (PKI) relying on
 the use of a centrally-managed web site providing an automated Certificate
-Authority (CA).  We present a reference implementation providing a P2P VPN
-(Virtual Private Network).  Additionally, we evaluate our contributions using
+Authority (CA).  We present a reference implementation which has been used in
+a P2P VPN (Virtual Private Network).  Additionally, we evaluate our contributions using
 both the P2P VPN in the PlanetLab wide-area testbed as well as with event-driven
 simulations of the overlay using simulated time delays.
 \end{abstract}
@@ -312,12 +312,14 @@ certificate revocation.
 
 Three approaches that propose a public overlay to create sub-overlays are
 \cite{one_ring}, \cite{randpeer}, and \cite{can_multicast}.
-The approach described in~\cite{one_ring} proposes the use of a universal overlay as a discovery plane for
+The approach described in~\cite{one_ring} proposes the use of a universal
+overlay as a discovery plane for
 service overlay.  The argument is that a participant of an overlay
 must support all services provided by that overlay such as multicast, DHT,
 or distributed search.  Our work has the same foundations as this paper, but
-takes the idea further by using the universal overlay for NAT traversal.
-In our approach, the service overlays are made private applying PKI techniques for PtP/EtE messaging.
+takes the idea further by using the universal overlay for NAT traversal
+additionally we provide mechanisms for applying PKI techniques for PtP and EtE
+messaging in the service overlays.
 Similarly, Randpeer~\cite{randpeer} uses a common overlay along with a
 subnetting service to create individual networks for applications and services,
 though the project has seen little activity and lacks implementation details.
@@ -453,18 +455,13 @@ after the user has obtained group information and has connected to a public
 overlay.
 
 To connect with and create a private overlay, the application performs the
-following steps:
-\begin{enumerate}
-\setlength{\itemsep}{0pt}
-\setlength{\parskip}{0pt}
-\item Connect to the public overlay
-\item Store node ID in the public overlay's DHT at the private group's key
-\item Query the public overlay's DHT at the private group's key
-\item Start an instance of the private overlay with the well-known end points
-being those of the node IDs retrieved from the DHT
-\item Upon forming a link with a member in the private overlay, the node follows
-the general approach for linking to neighbors and shortcuts but using security to restrict connections to only members of the private overlay
-\end{enumerate}
+following steps: 1) connect to the public overlay; 2) store node ID in the
+public overlay's DHT at the private group's key; 3) query the public overlay's
+DHT at the private group's key; 4) Start an instance of the private overlay with
+the well-known end points being those of the node IDs retrieved from the DHT;
+and 5) Upon forming a link with a member in the private overlay, the node follows
+the general approach for linking to neighbors and shortcuts but using security
+to restrict connections to only members of the private overlay
 
 The node should maintain membership in the public overlay when connected with
 the private overlay.  This is needed for two reasons: first, so that other peers can discover the
@@ -765,21 +762,21 @@ security parameters  was broken and would result in a deadlocked DTLS session,
 whereas in 1.0.0-beta3 (the latest released beta) DTLS renegotiation worked;
 however, it would often segmentation fault.
 
-Due to the constraints of OpenSSL, we have architected the system to support multiple security 
-frameworks; OpenSSL DTLS is one supported option, but the system also supports a custom stack written in C\#.
-To provide for flexibility between
-the two approaches, we created a security overlord that treats each approach
-like a filter.  Treating each implementation as a filter allows incoming control
-and data messages to be pushed into the object and data and control messages to
-be pulled out of the object.  The handshake used is shown in
-Figure~\ref{fig:dtls}.
+Due to the constraints of OpenSSL, we have architected the system to support
+multiple security frameworks; OpenSSL DTLS is one supported option, but the
+system also supports a custom stack written in C\#.  To provide for flexibility
+between the two approaches, we created a security overlord that treats each
+approach like a filter.  Treating each implementation as a filter allows
+incoming control and data messages to be pushed into the object and data and
+control messages to be pulled out of the object.
+%The handshake used is shown in Figure~\ref{fig:dtls}.
 
-\begin{figure}[h]
-\centering
-\includegraphics[width=2.75in]{in_progress.eps}
-\caption{DTLS Handshake}
-\label{fig:dtls}
-\end{figure}
+%\begin{figure}[h]
+%\centering
+%\includegraphics[width=2.75in]{in_progress.eps}
+%\caption{DTLS Handshake}
+%\label{fig:dtls}
+%\end{figure}
 
 Implementation of an OpenSSL DTLS filter was non-trivial, as documentation is
 sparse providing the possibility for varied approaches.  Traditionally, DTLS
@@ -867,20 +864,34 @@ For security purposes, we have modified bounded broadcast to avoid the revoked
 peers when sending a revocation message.  This is done by ...
 
 \subsection{Experimental Setup}
-We use two quantitative methods to evaluate our proposed approach: simulation and deployments on an actual
-wide-area system, PlanetLab~\cite{planetlab}.
+We use three quantitative methods to evaluate our proposed approach: network
+modeling, simulation and deployments on an actual wide-area system,
+PlanetLab~\cite{planetlab}.
+
+\subsubsection{Network Modeling}
+To model our system, we create a structured overlay of the usual dimensions:
+N peers with each peer having 3 near neighbors on both sides and $O(.5\log N)$
+shortcuts where N is the network size.  The system is fully connected and
+shortcuts are optimally chosen based upon their location in the node ID space
+using a harmonic distribution.  Once the model has been fully generated, we can
+perform tests to determine the time it takes to route packets on the overlay
+using the same modules that are used in routing in the real system.  We employ
+the MIT King data set~\cite{king_data} to determine the pairwise latency
+between nodes.  The MIT King data set consists of latency between DNS servers
+distributed globally on the Internet.  Since the MIT King data set only covers
+1740 nodes, we randomly distributed the nodes in the address space placing
+multiple nodes at the same ``physical'' location when necessary.
 
 \subsubsection{Simulations}
 To simulate our system, we have developed a module that applies an event-driven
 time simulation to our P2P software.  This allows us to verify correct behavior
 in the system prior to testing out on real systems, such as PlanetLab, as well
 as to perform experiments in a controlled environment, which simplifies the
-evaluation while faithfully modeling the overlay behavior.  We employ the MIT
-King data set~\cite{king_data} to determine the pairwise latency between nodes.
-The MIT King data set consists of latency between DNS servers distributed
-globally on the Internet.  To run the simulations, we employed
-Archer~\cite{archer}, which uses our P2P VPN software to form a distributed and
-decentralized computing grid for research into computer architecture.
+evaluation while faithfully modeling the overlay behavior.  Like the Netowrk
+Modeler, we also employ the MIT King data set~\cite{king_data} for pairwise
+latency between peers.  To run the simulations, we employed Archer~\cite{archer},
+which uses our P2P VPN software to form a distributed and decentralized
+computing grid for research into computer architecture.
 
 \subsubsection{PlanetLab}
 PlanetLab~\cite{planetlab} is a consortium of research institutes sharing
@@ -929,38 +940,58 @@ value, in our experience with overlays we run on PlanetLab, pools of this size f
 ring in the order of minutes.
 
 For Simulation, we followed similar steps though we were able to tighten the
-exact amount of peers in both the public and private overlays.  We began with a
-pool of 700 public nodes and 2 to 500 members in the private overlay.  We then
-waited for the overlays to become fully connected, whereupon we waited 60
-simulated minutes to ensure that the system was at steady state, i.e., trimming
-unnecessary connections and having a steady state machine.  At which point, we
-added an additional public node with a matching private node.  We took time
-snapshots of how long they took to become connected.
+exact amount of peers in both the public and private overlays.  We began with
+a pool of 700 public nodes and 2 to 300 members in the private overlay.  We
+then waited for the overlays to become fully connected, whereupon we waited
+60 simulated minutes to ensure that the system was at steady state, i.e.,
+trimming unnecessary connections and having a steady state machine.  At which
+point, we added an additional public node with a matching private node.  We
+took time snapshots of how long they took to become connected.
+
+For the Network Modeler, we repeated the steps done for the simulation, though
+we were able to evaluate the timing of up to 100000 nodes, so we performed
+evaluations to compare with the PlanetLab and Simulation results as well as
+much larger network sizes~\ref{fig:single_join_mod}.  For timing, we reviewed
+the typical connection steps when connecting to the public overlay, querying
+the DHT, and then connecting to the private overlay using this process as the
+basis for our evaluation.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=3.25in]{single_join.eps}
 \caption{The time it takes for a single node joining a public overlay and then
-a private overlay. Note that the time required for the private overlay includes the
-time for joining the public overlay.  The acronyms are defined with the following convention:  ABcD,
-where A = S for Simulated, P for PlanetLab, Bc = Pu for Public or Pr for Private,
-and D = N for no security on the private overlay or S for security on the private
-overlay.  Therefore the acronym PPrN represents "PlanetLab", "Private", "No
-Private overlay security", whereas SPuS represents "Simulated', "Public",
-"Private overlay security".}
+a private overlay. Since the public overlay size is the same in all tests, we
+averaged all results together for the individual evaluations.  The format for
+the legend is defined using the following convention: EnvironmentOverlay,
+where the environment is PlanetLab, Simulator, or (Network) Modeler and
+overlay is Base for public overlay, No for no security private overlay, and
+Sec for security enabled private overlay.  ModBase is network modeler
+Public overlay connection time.  SimSec is simulator security enabled private
+overlay.}
 \label{fig:single_join}
 \end{figure}
 
-Our results are presented in Figured~\ref{fig:single_join}.  It is expected that the time to
-connect to the public overlay should remain somewhat constant as the system
-has not changed.  This is evident in the simulator but PlanetLab shows
-some instability.  It would appear that when dealing with smaller private
-overlays, in the order of 100s, the connection time would be dominated by the
-time to connect to the public overlay.  Another important result is that
-security does not significantly add delay for time to connect; in both
-Simulated and PlanetLab, it is on the order of 5 to 10 seconds.  In smaller 
-PlanetLab based networks, the measurements have
-higher variance as individual systems have greater effect on end results.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=3.25in]{single_join_mod.eps}
+\caption{The time it takes for a single node joining a public overlay and then
+a private overlay. The legend consists of number[s], where the number
+represents the number of peers in the public overlay and the optional ``s''
+specifies whether the private overlay has security enabled.}
+\label{fig:single_join_mod}
+\end{figure}
+
+Our results, Figures~\ref{fig:single_join, ref:single_join_mod} are well
+correlated with near identical slopes.  In all cases the time to become
+connected with the private overlay remains reasonable and scales logarithmically
+as network size grows.  Connection times differ amongst the set, because
+the Simulator has let all the state machines waiting at maximum delay due to
+the lack of churn in the system, PlanetLab has limited overhead due to this
+delay, while the Network Modeler does not worry about state machine state,
+churn, nor bad connection attempts.  An important result is that PtP security
+does not significantly add to time to joining the overlays, most likely due
+to the majority of the time being occupied by overlay routing.
 
 \subsection{Instantaneous Pool Creation}
 \label{mass_join}
@@ -1085,8 +1116,11 @@ and intuitive mechanism to create and maintain private and secure overlays.
 For verification of usability, we show that the time to become connected to the
 private overlay occurs in less than 30 seconds and that the bandwidth required 
 from each peer while idling was insignificant, in the order of 100 bytes per
-second.  For future work, we envision applying this approach to social networks
-and to establish multicast groups as done in~\cite{can}.
+second.  For future work, we will consider the constraint that a user may not have
+the ability to host their own web server on the Internet and the steps necessary
+to make it accessible via a VPN or directly through the overlay.  Also, we
+envision applying this approach to social networks and to establish multicast
+groups as done in~\cite{can}.
 %\section*{Acknowledgment}
 
 \bibliographystyle{IEEEtran}
