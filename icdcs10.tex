@@ -17,8 +17,8 @@
 \usepackage{array}
 \usepackage{footnote}
 
-\widowpenalty=1000
-\clubpenalty=10000
+%\widowpenalty=1000
+%\clubpenalty=10000
 
 \begin{document}
 \title{Virtual Private Overlays: Secure Group Communication over Decentralized
@@ -501,16 +501,16 @@ improving performance over routing across the entire overlay.}
 \label{fig:overlay_relay}
 \end{figure}
 
-Another concern we address is the cost of having to maintain additional
-connections for each additional private overlay.  For this, we propose the use of
-{\em pathing}, which multiplex a single UDP or TCP socket to support multiple
-overlay nodes.  This model is supported because of the abstraction done on
-senders and receivers.  Thus a UDP or TCP connection can be easily wrapped 
-inside an arbitrary packet, in this case, a pathing connection.  Upon sending
-a packet, the message is prepended with path information.  When the remote side
-receives a packet, it parses and removes this pathing information and relays it
-to the appropriate receiver, i.e., overlay node.  We validate this approach in
-Section~\ref{pathing_evaluation}.
+%Another concern we address is the cost of having to maintain additional
+%connections for each additional private overlay.  For this, we propose the use of
+%{\em pathing}, which multiplex a single UDP or TCP socket to support multiple
+%overlay nodes.  This model is supported because of the abstraction done on
+%senders and receivers.  Thus a UDP or TCP connection can be easily wrapped 
+%inside an arbitrary packet, in this case, a pathing connection.  Upon sending
+%a packet, the message is prepended with path information.  When the remote side
+%receives a packet, it parses and removes this pathing information and relays it
+%to the appropriate receiver, i.e., overlay node.  We validate this approach in
+%Section~\ref{pathing_evaluation}.
 
 When overlays are small and have significant churn, it is easy for data stored
 in the overlay's DHT to be lost.  This can be improved by also supporting
@@ -752,18 +752,11 @@ language requires a marshaling wrapper to handle the translation; there is
 such a wrapper for OpenSSL~\cite{openssl.net}.  A constraint we found when
 using the library was the naming of the OpenSSL libraries was not consistent
 across platforms and, additionally, Windows lacked a formal installation method.
-In using the OpenSSL library with DTLS, in version 0.9.8k, renegotiation of
-security parameters  was broken and would result in a deadlocked DTLS session,
-whereas in 1.0.0-beta3 (the latest released beta) DTLS renegotiation worked;
-however, it would often segmentation fault.
+%In using the OpenSSL library with DTLS, in version 0.9.8k, renegotiation of
+%security parameters  was broken and would result in a deadlocked DTLS session,
+%whereas in 1.0.0-beta3 (the latest released beta) DTLS renegotiation worked;
+%however, it would often segmentation fault.
 
-Due to the constraints of OpenSSL, we have architected the system to support
-multiple security frameworks; OpenSSL DTLS is one supported option, but the
-system also supports a custom stack written in C\#.  To provide for flexibility
-between the two approaches, we created a security overlord that treats each
-approach like a filter.  Treating each implementation as a filter allows
-incoming control and data messages to be pushed into the object and data and
-control messages to be pulled out of the object.
 %The handshake used is shown in Figure~\ref{fig:dtls}.
 
 %\begin{figure}[h]
@@ -845,12 +838,18 @@ are handled by SSL callbacks, which hook into our security framework.
 %\label{tab:cbc_issue}
 %\end{table}
 
-While we believe OpenSSL's DTLS to be a superior choice due to its prevalence
-and being well studied, it is non-trivial to make available for all platforms.
-Because our goal is to provide a safe yet easy to use package, we leave the
-decision up to the user which protocol to use.  We believe home users and those
-interested in testing the system will start with the .NET security stack and
-migrate to the OpenSSL DTLS stack.
+Due to the constraints in using OpenSSL, we have architected the system to
+support multiple security frameworks; OpenSSL DTLS is one supported option, but
+the system also supports a custom stack written in C\#.  To provide for
+flexibility between the two approaches, we created a security overlord that
+treats each approach like a filter.  Treating each implementation as a filter
+allows incoming control and data messages to be pushed into the object and data
+and control messages to be pulled out of the object.  While we believe OpenSSL's
+DTLS to be a superior choice due to its prevalence and being well studied, it is
+non-trivial to make available for all platforms.  Because our goal is to provide
+a safe yet easy to use the overlay package, we leave the decision up to the user
+which protocol to use.  We believe those interested in testing the system will
+start with the .NET security stack and migrate to the OpenSSL DTLS stack.
 
 An important component of security is the handling of revocations handled by our
 broadcasting mechanism.  Though we call our broadcasting model bounded-broadcast
@@ -883,40 +882,51 @@ modeling, simulation and deployments on an actual wide-area system,
 PlanetLab~\cite{planetlab}.
 
 \subsubsection{Network Modeling}
-To model our system, we create a structured overlay of the usual dimensions:
-N peers with each peer having 3 near neighbors on both sides and $O(.5\log N)$
-shortcuts where N is the network size.  The system is fully connected and
+To model our system, we implemented an application that generates a structured
+overlay with the usual dimensions found in our deployed steady state systems:
+a system of size N with each peer having 3 near neighbors on both sides and
+$O(.5\log N)$ shortcuts.  The modeler creates a fully connected system where
 shortcuts are optimally chosen based upon their location in the node ID space
-using a harmonic distribution.  Once the model has been fully generated, we can
-perform tests to determine the time it takes to route packets on the overlay
-using the same modules that are used in routing in the real system.  We employ
+using a harmonic distribution.  Once the model has been fully generated, we use
+the same routing code used in the deployed overlay software to model routing
+behavior in terms of nodes visited, hops, and latency.  We employ
 the MIT King data set~\cite{king_data} to determine the pairwise latency
 between nodes.  The MIT King data set consists of latency between DNS servers
 distributed globally on the Internet.  Since the MIT King data set only covers
 1740 nodes, we randomly distributed the nodes in the address space placing
-multiple nodes at the same ``physical'' location when necessary.
+multiple nodes at the same ``physical'' location when necessary.  Security
+was modeled by adding an additional of 3 round-trip latencies to all
+connections, this models the behavior of the 6 message DTLS handshake used in
+the deployed code base.
 
 \subsubsection{Simulations}
-To simulate our system, we have developed a module that applies an event-driven
-time simulation to our P2P software.  This allows us to verify correct behavior
-in the system prior to testing out on real systems, such as PlanetLab, as well
-as to perform experiments in a controlled environment, which simplifies the
-evaluation while faithfully modeling the overlay behavior.  Like the Netowrk
-Modeler, we also employ the MIT King data set~\cite{king_data} for pairwise
-latency between peers.  To run the simulations, we employed Archer~\cite{archer},
-which uses our P2P VPN software to form a distributed and decentralized
-computing grid for research into computer architecture.
+Network modeling is limited to estimating values based upon empirical evidence
+and only reuses a subset of the actual overlay code.  To allow complete
+evaluation of our software stack, we have implemented a simulator using
+event-driven time that faithfully reusing the entire overlay code base including
+th routing, security, DHT, and connection state machines.  This allows us
+to verify correct behavior in the system prior to testing out on real systems,
+such as PlanetLab, as well as to perform experiments in a controlled
+environment, which simplifies the evaluation while still retaining the effects
+of a wide-are distributed system.  Like the network modeler, we also employed
+the MIT King data set~\cite{king_data} for pairwise latency between peers.
+To run the simulations, we employed Archer~\cite{archer}, which uses our P2P
+VPN software to form a distributed and decentralized computing grid for
+research into computer architecture.  Because the network modeler is very
+light weight, it can model more than 100,000 peers using a single computer;
+however, the simulator reuses the entire overlay software and can only simulate
+around 1,000 peers.
 
 \subsubsection{PlanetLab}
 PlanetLab~\cite{planetlab} is a consortium of research institutes sharing
 hundreds of globally distributed network and computing resources.  PlanetLab
 provides a very interesting environment as there is constant unexpected churn
 of machines due to the extreme load placed on the resources and system restarts.
-Complementary to simulation, PlanetLab gives us a glimpse of what to expect from the
-P2P software stack when used in an actual environment subject to higher variance due to resource contention and churn.
-Due to the time required and complexities in
-working with PlanetLab, we limit the number of experiments we used it for,
-focusing on the connection time to a private overlay.
+Complementary to simulation, PlanetLab gives us a glimpse of what to expect
+from the P2P software stack when used in an actual environment subject to higher
+variance due to resource contention and churn.  Due to the time required and
+complexities in working with PlanetLab, we limit the number of experiments we
+used it for, focusing on the connection time to a private overlay.
 
 \subsection{Connecting to the Private Overlay}
 In this experiment, we seek to determine the overall time
@@ -962,8 +972,8 @@ trimming unnecessary connections and having a steady state machine.  At which
 point, we added an additional public node with a matching private node.  We
 took time snapshots of how long they took to become connected.
 
-For the Network Modeler, we repeated the steps done for the simulation, though
-we were able to evaluate the timing of up to 100000 nodes, so we performed
+For the modeler, we repeated the steps done for the simulation, though
+we were able to evaluate the timing of up to 100,000 nodes, so we performed
 evaluations to compare with the PlanetLab and Simulation results as well as
 much larger network sizes~\ref{fig:single_join_mod}.  For timing, we reviewed
 the typical connection steps when connecting to the public overlay, querying
@@ -1022,8 +1032,8 @@ minutes of the last host's overlay software starting.
 \begin{figure}[h]
 \centering
 \includegraphics[width=3.25in]{mass_join.eps}
-\caption{The time it takes for various sized pools to instantaneously form
-on a public overlay with 200 nodes.}
+\caption{The time to form private overlay using a public overlay with 200 nodes
+after simulataneously turning on various counts of private overlay nodes.}
 \label{fig:big_join}
 \end{figure}
 
@@ -1048,8 +1058,10 @@ Figure~\ref{fig:bandwidth}.
 \caption{Bandwidth used in a systems with and with security during steady state
 operations consisting of 200 public nodes and various sized paired public /
 private nodes.  Those lines labeled ``static'' have DHT lists queried every 5
-minutes whereas in ``dynamic'' queries are made on an exponential time scale
-starting at 30 seconds with a maximum of 60 minutes.}
+minutes whereas in ``dynamic'' queries are made using an exponential back-off
+policy starting at 30 seconds up to a maximum of 60 minutes.  Note, bandwidth
+is in bytes / second, a negligible amount of bandwidth on most DSL and Cable
+Internet systems.}
 \label{fig:bandwidth}
 \end{figure}
 
@@ -1075,45 +1087,66 @@ which is solved by using both static and dynamic timeouts while querying.
 
 \subsection{Evaluating Revocation Implementations}
 \label{evaluation_revocation}
-In Figure~\ref{fig:broadcast_revocation}, we present the cost of revoking a
-peer in varying sized networks.  To evaluate the cost, we estimate that the
-average size of a revocation is 300 bytes, which includes information such
-as the user's name, the group, time of revocation, and a signature from the
-CA's private key.  We then evaluate the bandwidth and latency cost using a
-network modeler that reuses the same code base, i.e. routing tables and routing
-algorithms, as our structured P2P overlay software.  
+In Figures~\ref{fig:revocation_sim} and \ref{fig:revocation_mod}, we present
+the time required and network traffic to perform a revocation using the simulator
+and modeler, respectively.  To evaluate the cost, we estimate that the average
+size of a revocation is 300 bytes, which includes information such as the user's
+name, the group, time of revocation, and a signature from the CA's private key.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=2.75in]{in_progress.eps}
-\caption{Broadcast revocation.}
-\label{fig:broadcast_revocation}
+\includegraphics[width=2.75in]{revocation_sim.eps}
+\caption{Time required and bandwidth used during simulated DHT and broadcast
+revocation.}
+\label{fig:revocation_sim}
 \end{figure}
-
-Some concluding remarks.
-
-\subsection{Multiplexing Sockets}
-\label{pathing_evaluation}
-If systems were to start making heavy use of the private overlay model, the most
-straightforward and simple approach would be to have many sockets and threads to
-constantly read from them.  One option is to make a multisocket device and use
-select, but that requires a unique solution for each socket type.  As we
-discussed early, we proposed an approach whereby an abstracted transport could
-easily be multiplexed without the need for additional threads, sockets, and other
-resources.  We call this pathing and what we do is prepend each packet with a
-unique ID to differentiate the owner.  So while it may reduce system resource
-consumption it may increase network consumption, so we test it to determine both.
-We present CPU, memory, and network in Figure~\ref{fig:pathing_eval}.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=2.75in]{in_progress.eps}
-\caption{Pathing evaluation.}
-\label{fig:pathing_eval}
+\includegraphics[width=2.75in]{revocation_mod.eps}
+\caption{Time required and bytes used during a modeled DHT and broadcast
+revocation.}
+\label{fig:revocation_mod}
 \end{figure}
 
-Some concluding remarks.
+The results seem to indicate that in terms of time, they scale well together,
+though in network traffic the DHT scales significantly better.  The problem
+with the DHT approach is that it is inefficient for truly malicious peers.
+In the case of the DHT, if a peer is revoked, it can attempt to connect with
+new peers who have do not know of this revocation, each peer will have to query
+the DHT.  If this becomes the case, the DHT method will quickly become more
+inefficient.  On the flip side, the broadcast cannot ensure that all nodes
+receive the message, due to overlay network stability issues, peers may not
+be included in the broadcast.  As such the best approach may be to store a
+revocation in the DHT but notify all peers of a revocation via a broadcast.
 
+An interesting result for the broadcast is that it scales linearly as the number
+of peers in the overlay increases, as such, it is as efficient as it could
+possibly be.  This happens because a message never repeats over the same PtP
+connection.
+
+%\subsection{Multiplexing Sockets}
+%\label{pathing_evaluation}
+%If systems were to start making heavy use of the private overlay model, the most
+%straightforward and simple approach would be to have many sockets and threads to
+%constantly read from them.  One option is to make a multisocket device and use
+%select, but that requires a unique solution for each socket type.  As we
+%discussed early, we proposed an approach whereby an abstracted transport could
+%easily be multiplexed without the need for additional threads, sockets, and other
+%resources.  We call this pathing and what we do is prepend each packet with a
+%unique ID to differentiate the owner.  So while it may reduce system resource
+%consumption it may increase network consumption, so we test it to determine both.
+%We present CPU, memory, and network in Figure~\ref{fig:pathing_eval}.
+%
+%\begin{figure}[h]
+%\centering
+%\includegraphics[width=2.75in]{in_progress.eps}
+%\caption{Pathing evaluation.}
+%\label{fig:pathing_eval}
+%\end{figure}
+%
+%Some concluding remarks.
+%
 \section{Conclusion}
 \label{conclusions}
 In this paper, we presented a novel architecture for deploying secure, private
@@ -1122,24 +1155,33 @@ The public overlay at a minimum must provide a distributed data store,
 like a DHT, so that peers of the private system can rendezvous with each other.
 For constrained environments, we used NAT traversal techniques including STUN and
 TURN with both private and public overlays to support the relaying of packets.
-We evaluated the use of DTLS in our system and, to deal with excessive amounts of
-sockets, we introduced the notion of pathing, which showed that system resource
-consumption can be reduced with negligible effect on network performance.  Most
+We evaluated the use of DTLS in our system and determined that security overhead
+does not provide significant overhead during connection starting and idle periods.
+%and, to deal with excessive amounts of
+%sockets, we introduced the notion of pathing, which showed that system resource
+%consumption can be reduced with negligible effect on network performance.  
+Most
 importantly, we presented how a group infrastructure can be used as a user-friendly
 and intuitive mechanism to create and maintain private and secure overlays.  
 For verification of usability, we show that the time to become connected to the
 private overlay occurs in less than 30 seconds and that the bandwidth required 
 from each peer while idling was insignificant, on the order of 100 bytes per
-second.  For future work, we recognize the constraint imposed on a user that
-requires them to host their own web server on the Internet and will investigate
-steps that will make it accessible via a VPN or directly through the overlay.
-Also, we envision applying this approach to social networks and to establish
-multicast groups as done in~\cite{can}.
+second.
+
+At this point in time our platform still has a few drawbacks.  Users that
+cannot host their own web servers on the Internet are unable to use the groups
+mechanism, this could be solved by making a web site accessable via a VPN or
+directly through the overlay.  For each overlay, a peer will use more
+resources, to reduce this, peers could multiplex a single socket for multiple
+overlays reducing the thread count and open socket count.  Also it is important
+to note that the public overlay should implement decentralized security
+techniques, otherwise access to the private overlay will be hampered.  For
+future work, we envision applying this approach to social networks and to
+establish multicast groups as done in~\cite{can}.
 %\section*{Acknowledgment}
 
 \bibliographystyle{IEEEtran}
 \bibliography{icdcs10}
 \suppressfloats
-
 
 \end{document}
