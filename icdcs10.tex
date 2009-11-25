@@ -17,12 +17,21 @@
 \usepackage{array}
 \usepackage{footnote}
 
+\usepackage[small,it]{caption}
+\usepackage[tight]{subfigure}
+\setlength{\parskip}{0pt}
+\setlength{\parsep}{0pt}
+\setlength{\headsep}{0pt}
+\setlength{\topskip}{0pt}
+\setlength{\topmargin}{0pt}
+\setlength{\topsep}{0pt}
+\setlength{\partopsep}{0pt}
+
 %\widowpenalty=1000
 %\clubpenalty=10000
 
 \begin{document}
-\title{Virtual Private Overlays: Secure Group Communication over Decentralized
-Public Overlays in NAT-Constrained Environments}
+\title{Virtual Private Overlays: Secure Group Communication in NAT-Constrained Environments}
 
 \author{\IEEEauthorblockN{David Isaac Wolinsky, Kyungyong Lee, Tae Woong Choi, P. Oscar Boykin, and Renato Figueiredo} 
 \IEEEauthorblockA{Advanced Computing Information Systems Lab\\
@@ -38,15 +47,15 @@ have been successfully adopted in large-scale Internet services such as content
 delivery networks and file sharing; however, widespread adoption in small/medium
 scales has been limited due in part to security concerns and difficulty
 bootstrapping in NAT-constrained environments.  Nonetheless, P2P systems can be designed to
-provide guaranteed look-up times, NAT traversal, point-to-point overlay
-security, and a distributed data store. In this paper we propose
+provide guaranteed lookup times, NAT traversal, point-to-point overlay
+security, and distributed data stores. In this paper we propose
 a novel way of creating overlays that are both secure and
-private and can be bootstrapped from a public overlay.
+private and a method to bootstrap them using a public overlay.
 Private overlay nodes use the public overlay's distributed data store to discover
 each other, and the public overlay's connections to assist with NAT hole punching
 and as relays providing STUN and TURN NAT traversal techniques.  The security
 framework utilizes groups, which are created and managed by users through
-a web interface that can be hosted on the Internet.
+a web based user interface.
 Each group acts as a Public Key Infrastructure (PKI) relying on
 the use of a centrally-managed web site providing an automated Certificate
 Authority (CA).  We present a reference implementation which has been used in
@@ -109,8 +118,8 @@ In this paper, we describe the architecture of a system that attempts
 to balance the benefits of third party services with P2P infrastructures.
 Two main contributions of this paper are the architecture of a P2P messaging
 framework that integrates existing datagram-based security and supports
-bootstrapping multiple virtual private overlays that efficiently multiplex a
-peer's network resources subject to constraints such as NATs.
+bootstrapping multiple virtual private overlays using a public overlay to
+assist in NAT traversal.
 Our system relies on a completely open infrastructure using mechanisms that
 reduce the maintenance and deployment burden that exist with decentralized
 P2P systems without the loss of ownership due to use of third party systems.
@@ -144,16 +153,18 @@ and security and messaging are abstracted away.
 This approach also has benefits for system deployers, whereas insecure systems
 would require modifying the overlay software to support security, application
 level security, or the deployment of a decentralized and scalable VPN in
-addition to the overlay software.
+addition to the overlay software.  Note, that the usefulness of the public
+overlay could be nullified if it does not employ some form of decentralized
+security as described in~\cite{secure_routing}.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=3.25in]{subrings.eps}
 \caption{The use of a single, public overlay to bootstrap multiple, isolated
-private overlays.  The center pool is the public pool.  Each node in the
-private pools has a corresponding partner in the public pool, the relationship
-is represented by a dashed line.  A public overlay node can be multiplexed by
-more than one private overlay.}
+private overlays.  The ring in the center is the public overlay.  Each node in
+the private overlay has a corresponding partner in the public pool, the
+relationship is represented by a dashed line.  A public overlay node can be
+multiplexed by more than one private overlay.}
 \label{fig:subrings}
 \end{figure}
 
@@ -162,9 +173,9 @@ provides background and related work.
 Section~\ref{contributions} describes our contributions.  In
 Section~\ref{applications}, we present different usage models and present a
 real system using the techniques described in this paper, the GroupVPN.  In
-Section~\ref{evaluations}, we use both real and simulated systems to provide
-further understanding of the approach.  We conclude the paper in
-Section~\ref{conclusions}.
+Section~\ref{evaluations}, we described technical details of our implementation
+and use models, simulators, and real systems to verify the utility of our
+approach.  We conclude the paper in Section~\ref{conclusions}.
 
 \section{Background}
 \label{background}
@@ -175,15 +186,15 @@ difficult, and related work.
 \subsection{Structured P2P Systems}
 \label{structured_p2p}
 Structured P2P systems provide distributed look up services with guaranteed
-search time in $O(\log N)$ to $O(\log_2 N)$ time, in contrast to unstructured
+search time with a lower bound of $O(\log N)$, in contrast to unstructured
 systems, which rely on global knowledge/broadcasts, or stochastic techniques
 such as random walks~\cite{unstructured_v_structured}.  Some examples of
 structured systems can be found in~\cite{pastry, chord, symphony, kademlia,
 can}.  In general, structured systems are able to make these guarantees by
 self-organizing a structured topology, such as a 2D ring or a hypercube.
 
-The node ID, drawn from a large address space, must be unique to each peer,
-otherwise an address collision occurs which can prevent nodes from participating
+Each node is given a unique node ID.  The node ID, drawn from a large address space, must be unique to each peer,
+otherwise address collisions will occur which can prevent nodes from participating
 in the overlay.  Furthermore, having the node IDs well distributed assist in
 providing better scalability as many algorithms for selection of shortcuts
 depend on having node IDs uniformly distributed across the entire address space.
@@ -199,7 +210,7 @@ the application, available through some out-of-band mechanism, or possibly using
 multicast to find pools~\cite{pastry}.
 
 Depending on the protocol, a node must be connected to closest
-neighbors; optimizations for fault tolerance suggest
+neighbors in the node ID address space; optimizations for fault tolerance suggest
 that it should be between 2 to $\log(N)$ on both sides.  
 %If a peer does not
 %know the address of its immediate predecessor or successor and a message
@@ -219,7 +230,7 @@ from a harmonic distribution in the node address space~\cite{symphony}.
 Most structured P2P overlays support decentralized storage/lookup of information by
 mapping keys to specific node IDs in an overlay.  At a minimum, the data is stored
 at the node ID either smaller or larger to the data's node ID and for fault
-tolerance the data can be stored at other nodes nearby.  This sort of mapping
+tolerance the data can be stored at other nodes.  This sort of mapping
 and data storage is called a distributed hash table (DHT) and is a typical
 component of most structured P2P systems.
 
@@ -230,9 +241,13 @@ recursive.  In iterative routing, the sender of a packet will contact each
 successive member in a path directly until it find the destination node, at
 which point it sends the packet directly to the destination.  In recursive
 routing, messages are sent through the overlay via forwarding from one peer to
-the next until arriving at the destination.  Iterative routing can easily be
-secured using stream and datagram based security such as TLS~\cite{tls} and
-DTLS~\cite{dtls}, because the sender initiates all messages.  In contrast, in
+the next until arriving at the destination.  Iterative routing makes NAT
+traversal complicated as peers create connections during the routing of packets,
+which would require constant NAT traversal mediation, whereas recursive routing
+provides stable connections due to a single NAT traversal during the connection
+phase.  In regards to security, Iterative routing can easily be secured using
+stream and datagram based security such as TLS~\cite{tls} and DTLS~\cite{dtls},
+because the sender initiates all messages; however, in
 recursive routing, EtE communication cannot be secured in the same fashion by
 through socket-based TLS and DTLS, the sender because messages are routed
 through intermediate nodes.
@@ -240,9 +255,9 @@ through intermediate nodes.
 \subsubsection{Private and Secure Overlay Subsets}
 While EtE authentication and privacy is key for many applications, it does not increase the reliability of the structured
 overlay.  In a free-to-join system, malicious peers can easily intercept packets
-for eavesdropping, discard or tamper them.  To deal with
+for eavesdropping or to discard or tamper with them.  To deal with
 this issue, each overlay node could participate with a subset of other nodes in
-a secure system where each peer would maintain a routing table containing a subset
+a secure system where each member would maintain a routing table containing a subset
 of those involved.  Each node would have to distinguish between the different
 messages, handing them to unique routers for each group, handle connectivity
 of the subset during churn, and providing a distributed data store for use by this subset.
@@ -260,12 +275,15 @@ multiple NAT traversals.  There are a few types of NATs that can be traversed
 to support bidirectional communication through UDP-hole punching, known as STUN.
 The remaining categories of NATs either do not support UDP-hole punching due to
 how the NATs do port mapping or support only TCP communication and block all
-UDP communication.  In~\cite{tcp_nat}, the authors evaluated many common NAT
-boxes and determined that STUN works on approximately 70\% of NAT devices.
-Unlike UDP hole punching, most TCP techniques require either super-user access
+UDP communication.  In~\cite{tcp_nat, p2p_nat}, the authors evaluated many
+common NAT boxes and determined that UDP-hole punching works on approximately
+82\% of NAT devices and TCP-hole punching on at least 64\% of NAT devices.
+Unlike UDP hole punching, many TCP techniques require either super-user access
 or be configured with external software packages that require super-user access.
-While the remaining device require an intermediary or relay to pass packets
-between the peers behind the NATs.  Though relays or TURN style NAT traversal
+Those that do not require that the NAT not block unsolicited components of the
+TCP three-way handshake.
+While the remaining devices require an intermediary or relay to pass packets
+between the peers behind the NATs.  Relays or TURN style NAT traversal
 presents issues similar to EtE communication in recursive routing, namely, each
 node will authenticate itself with the relay, but they will not readily be
 able to authenticate each other using socket-based TLS or DTLS.
@@ -346,16 +364,18 @@ IDs.  The work does not describe how to efficiently implement such a system.
 Other similar research attempts to create trusted systems~\cite{stone, tor} but
 with anonymous members, though it could be reasonably argued these services are
 not applicable to small or medium business, which would prefer to have a private
-overlay.  None of the works discuss how to apply such models to
+overlay.  None of the works focus on how to apply such models to
 systems that are constrained in network connectivity, e.g by NATs.
 
 \section{Bootstrapping Secure and Private Overlays}
 \label{contributions}
-In this section, we explain the individual components of our contribution.  We
+In this section, we explain the individual components of our contributions.  We
 begin by describing the application of SSL-derived protocols for EtE and PtP security in
-overlays, which leads to a discussion on the use of a group web interface to
-provide a user-friendly PKI, and concludes with our approach to bootstrapping
-private and secure overlays in constrained environments using public overlays.
+overlays, which leads to how to reuse an existing public overlay to bootstrap a
+private and secure overlay in a constrained environment.  We conclude with a
+discussion of how we combine the components in to secure group overlays through
+the use of a group web interface to provide a user-friendly PKI, and concludes
+with our approach 
 
 \subsection{Secure Overlays}
 \label{secure_overlays}
@@ -363,8 +383,8 @@ Securing EtE and PtP communication in overlays using iterative routing with
 servers using static IP addresses can easily be done using TLS or DTLS with
 certificates bound to the servers static IP address.  This approach does not
 port well to systems that use recursive routing. First, TLS cannot easily be used
-because overlay routing in NAT-constrained environments is traditionally done through datagrams and not streams,
-which would require overlays to implement a reliable stream to use TLS. 
+because overlay routing in NAT-constrained environments is traditionally done
+through datagrams and not reliable streams.
 DTLS can be applied because it supports lost and out of order messages, though
 the implementation must support usage without a socket.  The
 problem then becomes how to deal with identity.  In this section, we discuss how
@@ -388,14 +408,14 @@ as verifying the certificate used is Alice's and Bob's, to support security.}
 
 Exchanged certificates need a mechanism to verify authenticity.  Like an
 Internet browser, this verification should happen automatically with no user
-intervention.  Typically for TLS and DTLS, the certificates have the Web site's
+intervention.  Typically for SSL-derivatives, the certificates have the owner's
 IP address or domain name as part of the certificate's common name field.  In
 our system, we bind the certificate to each individual node ID.  That way,
 a single certificate cannot be used for multiple peers in the overlay, making
 it difficult for an adversary to launch Sybil attacks.
 
 \subsubsection{Forming the Connection}
-In overlay systems, a peer's connection manager requests to make an outgoing
+In overlay systems, a peer's connection manager requests an outgoing
 connection to another peer in the system.  This triggers the creation of a
 socket (UDP or TCP), which is wrapped in the abstracted sender and receiver
 models.  The abstracted models arrive into the security handler, which
@@ -407,8 +427,8 @@ should verify the certificate to ensure identity.
 
 Because EtE communication is application-specific, it requires
 a slightly different path.  For that purpose, we have a specific module that
-allows an application to request a secure EtE sender; the application needs to be prepared to deal with the
-process of handling verification.  Once an application requests the sender, the
+allows an application to request a secure EtE sender.
+Once an application requests the sender, the
 module passes a sender / receiver model to the security handler, like in the PtP
 process.  Once the security initialization has completed, the
 resulting sender / receiver is verified automatically for proper identity.
@@ -456,7 +476,7 @@ public overlay's DHT at the private group's key; 3) query the public overlay's
 DHT at the private group's key; 4) Start an instance of the private overlay with
 the well-known end points being those of the node IDs retrieved from the DHT;
 and 5) Upon forming a link with a member in the private overlay, the node follows
-the general approach for linking to neighbors and shortcuts but using security
+the standard approach for linking to neighbors and shortcuts but using security
 to restrict connections to only members of the private overlay
 
 The node should maintain membership in the public overlay when connected with
@@ -464,10 +484,9 @@ the private overlay.  This is needed for two reasons: first, so that other peers
 node while following the same set of steps; and second, for NAT traversal purposes, as
 discussed in the next paragraph.  Because the public overlay and its DHT
 provides a means for discovery, nodes must maintain their node ID in the public
-key's DHT.  A data inserter must constantly update the lease for the data
-object, otherwise the data will be removed.  This is because DHTs are
-implemented as leasing systems or as soft state, whereby data objects are
-inserted with a time to live and removed upon expiration.
+overlay's DHT.  A data inserter must constantly update the lease for the data
+object, otherwise the data will be removed, due to the soft state or leasing
+nature of DHT, whereupon key, value pairs removed after lease has expired.
 
 During the formation of the private overlay, peers may find that they are
 unable to form direct connections with other members of the private overlay
@@ -529,8 +548,8 @@ partitioned overlays believed they were in a well-formed state and thus never
 reviewed the DHT list to determine if there were peers that should be their
 neighbors.  This caused the overlay to remain fragmented until either a new
 peer joined or enough peers left causing the nodes to believe they are in a
-non-well-formed state and require bootstrapping links or a more proactive 
-method.  The reason the issue even existed was that states of significant churn,
+non-well-formed state and require bootstrapping links.
+The reason the issue even existed was that states of significant churn,
 especially during a bootstrapping of a significant amount of new nodes in the
 system, the DHT list can become unstable with each set of node potentially
 seeing different lists.  Of course by the end, the lists would be well-formed,
@@ -562,15 +581,15 @@ other methods of CA interaction, our experience has shown that it provides a
 model that is satisfactory for many use cases.
 
 \subsubsection{Joining the Group Overlay}
-Membership of an overlay maps a set of users as a group. This led us to the
-model of using a group infrastructure as a means to apply a PKI.  Using our
-system, a user can host an individual or multiple groups per Web site.  The
+Membership of an overlay maps a set of users as a group. This led us to applying
+the PKI model to a group infrastructure.  Using our
+system, a user can host an individual or multiple groups per web site.  The
 creator of the group becomes the default administrator, and users can request
 access to the group.  Upon an administrator approving, users are able to
 download configuration data containing overlay information and a shared key
 used by the overlay application to communicate securely with the web interface.
 The shared key uniquely identifies the user to the web site allowing the
-application to securely send certificate requests.  By default, the Web site
+application to securely send certificate requests.  By default, the web site
 automatically signs all certificate requests, though it is not limited to this
 model.  Two other approaches are 1) require the user to submit a request and
 wait for an administrator to verify each request and 2) set a maximum amount
@@ -619,7 +638,7 @@ key for all node IDs notifying each of them of the revocation.  The insertion
 of the revocation notice handles a race condition, where a peer may insert
 its ID but never receive a notification.  Thus after inserting the request for
 notification upon revocation, the peer should ensure that a revocation has not
-occurred by querying the DHT to verify the CA has not inserted a revocation.
+occurred by querying the DHT to verify the non-existence of a CA revocation.
 
 When the group is securing PtP traffic, the DHT approach does not effectively
 seal the rogue user from the system until all peers have updated the revocation
@@ -631,7 +650,8 @@ the DHT approach exists when using a public free-to-join and an application
 secured by the group, as in~\cite{nsdi10}.
 
 In Section~\ref{evaluation_revocation}, we present more technical details and
-an evaluation with focus on latency and bandwidth of these three methods.  
+an evaluation with focus on latency and network traffic of the DHT and broacast
+methods.
 
 Because the security framework is based on PKI, another approach that is also
 supported is the use of certificate revocation lists
@@ -643,8 +663,8 @@ had been tampered or hijacked.
 \section{Applications}
 \label{applications}
 In this section, we present applications and potential ways to configure them
-to use a private overlay.  The applications we investigate include instant
-message, VPNs, and social networks.  The key to all these applications is that
+to use a private overlay.  The applications we investigate include chat rooms,
+social networks, VPNs, and multicast.  The key to all these applications is that
 users can easily host their own services and be discovered through the use of
 a NAT-traversing, structured overlay network.
 
@@ -703,10 +723,9 @@ Using an approach similar to CAN~\cite{can_multicast}, a private ring can form
 a ring where all nodes are members of the multicast group with the additional
 feature that you can trust that your audience is limited to those in the
 overlay.  The main advantage of such multicasting technologies would be for
-wide-area, distributed multicast for the purposes of systems supports different
-types of multicast applications such as light weight multicast DNS / DNS-SD
-(service discovery) or more heavy weight but fault tolerant like streaming
-audio and video.
+wide-area, distributed multicast.  Example of such services include 
+light weight multicast DNS / DNS-SD (service discovery) or more heavy weight
+audio and video streaming.
 
 \section{Implementation Details and Evaluation}
 \label{evaluations}
@@ -739,32 +758,8 @@ our own platform-independent DTLS using C\# and cryptography routines provided
 by .NET.  Because we are sending messages over unreliable mediums such as UDP
 sockets, relays, and an overlay, we could not reuse SSL or TLS.  Additionally
 we want EtE security for relays and overlay communication, the security needed
-to be implemented through a filter or only in memory and not on a socket.
-
-While OpenSSL is a de-facto standard, with US federal government approved code, and 
-platform portability, during our use of the platform we experienced several
-issues.  The portability provided by OpenSSL is limited to API (Application
-Programming Interface) and not ABI (Application Binary Interface), which
-requires a platform-specific library be either installed or distributed with
-the application.  Whereas the purpose in using C\#, like Java, is that a single
-binary can run on any platform.  To use unmanaged libraries from a managed
-language requires a marshaling wrapper to handle the translation; there is
-such a wrapper for OpenSSL~\cite{openssl.net}.  A constraint we found when
-using the library was the naming of the OpenSSL libraries was not consistent
-across platforms and, additionally, Windows lacked a formal installation method.
-%In using the OpenSSL library with DTLS, in version 0.9.8k, renegotiation of
-%security parameters  was broken and would result in a deadlocked DTLS session,
-%whereas in 1.0.0-beta3 (the latest released beta) DTLS renegotiation worked;
-%however, it would often segmentation fault.
-
-%The handshake used is shown in Figure~\ref{fig:dtls}.
-
-%\begin{figure}[h]
-%\centering
-%\includegraphics[width=2.75in]{in_progress.eps}
-%\caption{DTLS Handshake}
-%\label{fig:dtls}
-%\end{figure}
+to be implemented through a filter or more specifically through a memory buffer
+and not a socket.
 
 Implementation of an OpenSSL DTLS filter was non-trivial, as documentation is
 sparse providing the possibility for varied approaches.  Traditionally, DTLS
@@ -792,7 +787,7 @@ are handled by SSL callbacks, which hook into our security framework.
 
 \begin{figure}[!h]
 \centering
-\includegraphics[width=2.75in]{dtls_filter.eps}
+\includegraphics[width=2.5in]{dtls_filter.eps}
 \caption{The DTLS filter.}
 %  To send a secure message, execute SSL\_write and
 %retrieve the encrypted packet at the WRITE BIO via a BIO\_read.  To verify
@@ -805,6 +800,46 @@ are handled by SSL callbacks, which hook into our security framework.
 %request/reply system.}
 \label{fig:dtls_filter}
 \end{figure}
+
+OpenSSL is a de-facto standard, with US federal government approved code and 
+platform portability, though during our development involving the platform we
+experienced a few
+issues.  The portability provided by OpenSSL is limited to API (Application
+Programming Interface) and not ABI (Application Binary Interface), which
+requires a platform-specific library be either installed or distributed with
+the application.  Whereas the purpose in using C\#, like Java, is that a single
+binary can run on any platform.  To use unmanaged libraries from a managed
+language requires a marshaling wrapper to handle the translation; there is
+such a wrapper for OpenSSL~\cite{openssl.net}.  A constraint we found when
+using the library was the naming of the OpenSSL libraries was not consistent
+across platforms and, additionally, Windows lacked a formal installation method.
+
+Due to these constraints, we have architected the system to
+support multiple security frameworks; in addition to OpenSSL DTLS, the system
+also also supports a custom stack written in C\#.  To provide for
+flexibility between the two approaches, we created a security overlord that
+treats each approach like a filter.  Treating each implementation as a filter
+allows incoming control and data messages to be pushed into the object and data
+and control messages to be pulled out of the object.  While we believe OpenSSL's
+DTLS to be a superior choice due to its prevalence and being well studied, it is
+non-trivial to make available for all platforms.  Because our goal is to provide
+a safe yet easy to use the overlay package, we leave the decision up to the user
+which protocol to use.  We believe those interested in testing the system will
+start with the .NET security stack and migrate to the OpenSSL DTLS stack.
+
+%In using the OpenSSL library with DTLS, in version 0.9.8k, renegotiation of
+%security parameters  was broken and would result in a deadlocked DTLS session,
+%whereas in 1.0.0-beta3 (the latest released beta) DTLS renegotiation worked;
+%however, it would often segmentation fault.
+
+%The handshake used is shown in Figure~\ref{fig:dtls}.
+
+%\begin{figure}[h]
+%\centering
+%\includegraphics[width=2.75in]{in_progress.eps}
+%\caption{DTLS Handshake}
+%\label{fig:dtls}
+%\end{figure}
 
 % DAVID: do we need this discussion on CBCs? might be too narrow for this paper
 % If space permits ...
@@ -838,22 +873,9 @@ are handled by SSL callbacks, which hook into our security framework.
 %\label{tab:cbc_issue}
 %\end{table}
 
-Due to the constraints in using OpenSSL, we have architected the system to
-support multiple security frameworks; OpenSSL DTLS is one supported option, but
-the system also supports a custom stack written in C\#.  To provide for
-flexibility between the two approaches, we created a security overlord that
-treats each approach like a filter.  Treating each implementation as a filter
-allows incoming control and data messages to be pushed into the object and data
-and control messages to be pulled out of the object.  While we believe OpenSSL's
-DTLS to be a superior choice due to its prevalence and being well studied, it is
-non-trivial to make available for all platforms.  Because our goal is to provide
-a safe yet easy to use the overlay package, we leave the decision up to the user
-which protocol to use.  We believe those interested in testing the system will
-start with the .NET security stack and migrate to the OpenSSL DTLS stack.
-
 An important component of security is the handling of revocations handled by our
-broadcasting mechanism.  Though we call our broadcasting model bounded-broadcast
-because it is capable of broadcasting to a subset of nodes, it is also capable
+broadcasting mechanism.  We call our broadcasting model bounded-broadcast
+because it is capable of broadcasting to a subset of nodes, though it is also capable
 of broadcasting to the entire overlay.  A bounded broadcast uses the following
 recursive algorithm:  Begin with node, $x$, triggering a broadcast message over
 the region $[x, y]$.  $x$ has $F$ connections to nodes in the range $[x, y]$.
@@ -866,7 +888,9 @@ for continuing the bounded broadcast from $[b_F, y]$.  When a node receives a
 message to a range that contains its own address the message is delivered to
 that node and then routed to others in that range.  Figure \ref{fig:tree} shows
 how this bounded broadcast forms a local tree recursively.   The time required
-for a bounded broadcast is $O(\log^2 N)$.  For security purposes, revoked peers
+for a bounded broadcast is $O(\log^2 N)$.  Thus for a global broadcast, a peer
+sends does the broadcast from its node ID to the node ID immediately preceding it
+in the address space.  Additionally for security purposes, revoked peers
 are not included in the set of neighbors during the recursion stage.
 
 \begin{figure}[!h]
@@ -878,7 +902,7 @@ are not included in the set of neighbors during the recursion stage.
 
 \subsection{Experimental Setup}
 We use three quantitative methods to evaluate our proposed approach: network
-modeling, simulation and deployments on an actual wide-area system,
+modeling, simulation, and deployments on an actual wide-area system,
 PlanetLab~\cite{planetlab}.
 
 \subsubsection{Network Modeling}
@@ -905,10 +929,10 @@ and only reuses a subset of the actual overlay code.  To allow complete
 evaluation of our software stack, we have implemented a simulator using
 event-driven time that faithfully reusing the entire overlay code base including
 th routing, security, DHT, and connection state machines.  This allows us
-to verify correct behavior in the system prior to testing out on real systems,
+to verify correct behavior in the overlay prior to testing out on real systems,
 such as PlanetLab, as well as to perform experiments in a controlled
 environment, which simplifies the evaluation while still retaining the effects
-of a wide-are distributed system.  Like the network modeler, we also employed
+of a wide-are distributed system.  Like the network modeler, we have also employed
 the MIT King data set~\cite{king_data} for pairwise latency between peers.
 To run the simulations, we employed Archer~\cite{archer}, which uses our P2P
 VPN software to form a distributed and decentralized computing grid for
@@ -921,17 +945,17 @@ around 1,000 peers.
 PlanetLab~\cite{planetlab} is a consortium of research institutes sharing
 hundreds of globally distributed network and computing resources.  PlanetLab
 provides a very interesting environment as there is constant unexpected churn
-of machines due to the extreme load placed on the resources and system restarts.
+of machines due to the extreme load placed on the resources and unscheduled system restarts.
 Complementary to simulation, PlanetLab gives us a glimpse of what to expect
 from the P2P software stack when used in an actual environment subject to higher
 variance due to resource contention and churn.  Due to the time required and
 complexities in working with PlanetLab, we limit the number of experiments we
-used it for, focusing on the connection time to a private overlay.
+used it for, focusing on the time required to join a private overlay.
 
 \subsection{Connecting to the Private Overlay}
 In this experiment, we seek to determine the overall time
 it takes for a node to become connected to the public overlay, and then for a
-subsequent node to become connected to the private overlay.  By connected, we
+subsequent pair node to become connected to the private overlay.  By connected, we
 mean a node has a connection with the nodes whose IDs are closest in the ring (i.e., neighbors with IDs both smaller
 than and larger than the node who is joining).  The results of this experiment
 show the time it takes to connect to a public overlay, query the DHT for private overlay
@@ -942,21 +966,22 @@ becoming connected, the private node first inserts into the DHT its
 subring information using an automated lease extender.  Afterwards, we
 start the private node and begin constantly querying the DHT key for information
 from other nodes.  As soon as this is retrieved from the DHT, it is appended to the list of
-nodes for the state machine to attempt connecting with.  Once the state machine
+potential bootstrapping nodes from which the bootstrapping state machine pulls addresses
+from during the early connection phase.  Once the private node
 reaches a connected state, the test is terminated.  The reason for starting
 the private node after the public node was due in part to earlier experiments.
-We noticed that starting the public and private overlays at the same time took
+In which we noticed that starting the public and private overlays at the same time took
 longer due to the state machines in the private node using exponential time
-back-offs of up to a minute when unable to retrieve the DHT keys.
+back-offs of up to a minute when there were no nodes in the bootstrapping node list.
 
 For PlanetLab, we created several overlays with random distribution of private
 nodes.  We start from a base network of
 600 nodes on PlanetLab then had each node randomly decide to join the private
 overlay in order to obtain private overlays consisting of 5 to 600 members.  We
-crawled the network to verify the amount of private overlay nodes.  Then we began
-the experiment by connecting to the ring from the same network location 100 times
+crawled the network to verify the amount of private overlay nodes.  Then began the
+experiment, where we would connect to the ring from the same physical location 100 times
 using a different node ID each time, causing the node to join different peers and
-create an distribution of connection times. During this process, we measured the time it
+creating a distribution of connection times. During this process, we measured the time it
 took for the public node and private nodes to become connected.  To ensure that
 the PlanetLab public overlay was fully connected, we waited an hour prior to starting the
 experiments to provide enough time for it to reach steady state. This is a conservative
@@ -1045,27 +1070,27 @@ the use of security has a small relative impact on the overall time to
 form the ring.
 
 \subsection{Measuring Bandwidth}
-The previous simulation experiments were in fact ran during the same test, but
-in order to ensure stability, we always wait 60 virtual minutes before proceeding
-to the next step.  Reusing the simulation results changes no results and cuts
-down on the most expensive part of the procedure, the bootstrap phase.  In this
-section, we present the network bandwidth used by each process, see
+In this experiment, we continued the overlay bootstrapped in the previous
+experiment and measured the bandwidth consumed for the 60 minutes 60 minutes
+after the overlay was well-formed.  Reusing the simulation results changes no
+results and cuts down on the most expensive part of the procedure, the bootstrap
+phase.  In this section, we present the network bandwidth used by each process, see
 Figure~\ref{fig:bandwidth}.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=3.25in]{bandwidth.eps}
+\includegraphics[width=2.75in]{bandwidth.eps}
 \caption{Bandwidth used in a systems with and with security during steady state
 operations consisting of 200 public nodes and various sized paired public /
 private nodes.  Those lines labeled ``static'' have DHT lists queried every 5
 minutes whereas in ``dynamic'' queries are made using an exponential back-off
-policy starting at 30 seconds up to a maximum of 60 minutes.  Note, bandwidth
-is in bytes / second, a negligible amount of bandwidth on most DSL and Cable
-Internet systems.}
+policy starting at 30 seconds up to a maximum of 60 minutes.  Bandwidth
+is in bytes / second, a negligible amount of bandwidth for DSL and Cable
+Internet.}
 \label{fig:bandwidth}
 \end{figure}
 
-As shown in Figure~\ref{fig:bandwidth}, when cmparing the querying of the DHT
+As shown in Figure~\ref{fig:bandwidth}, when comparing the querying of the DHT
 using static and dynamic timers, the static timer's bandwidth is dominated by
 DHT queries.  Since the system is at steady state, i.e., no new nodes in the
 system, only a single DHT query is made using dynamic timers.  In both cases,
@@ -1076,14 +1101,13 @@ use a negligible amounts of bandwidth and that even using security does not
 increase it significantly.
 
 In regards to selecting a proper timeout, it can logically be surmised that
-if an existing public and private overlay are going through heavy churn,
+if an existing public and private overlay were going through heavy churn,
 there will always be a base of nodes connected to each other.  If because the DHT
 is currently fragmented, a new node forms a partitioned private overlay, the node
 should eventually and quickly find out about the original overlay and reform
-the split overlays.  A dynamic timeout puts the weight for fixing ring partitions
-on the nodes that created them rather than the older more stable nodes.  Though
-it would appear that ring partitions occur most frequently during massive joins,
-which is solved by using both static and dynamic timeouts while querying.
+the split overlays due to the continuous queries.  The advantage of the dynamic
+timeout is that it places the weight for fixing ring partitions
+on the nodes that created them rather than the older more stable nodes. 
 
 \subsection{Evaluating Revocation Implementations}
 \label{evaluation_revocation}
@@ -1101,6 +1125,17 @@ revocation.}
 \label{fig:revocation_sim}
 \end{figure}
 
+The results seem to indicate that in terms of time, they scale well together,
+though in network traffic the DHT scales significantly better.  The problem
+with the DHT approach is that it is inefficient for truly malicious peers.
+In the case of the DHT, if a peer is revoked, it can attempt to connect with
+new peers who have do not know of this revocation, each peer will have to query
+the DHT.  If this becomes the case, the DHT method will quickly become more
+inefficient.  On the other hand, the broadcast cannot ensure that all nodes
+receive the message, due to overlay network stability issues, peers may not
+be included in the broadcast.  As such the best approach may be to store a
+revocation in the DHT but notify all peers of a revocation via a broadcast.
+
 \begin{figure}[h]
 \centering
 \includegraphics[width=2.75in]{revocation_mod.eps}
@@ -1108,17 +1143,6 @@ revocation.}
 revocation.}
 \label{fig:revocation_mod}
 \end{figure}
-
-The results seem to indicate that in terms of time, they scale well together,
-though in network traffic the DHT scales significantly better.  The problem
-with the DHT approach is that it is inefficient for truly malicious peers.
-In the case of the DHT, if a peer is revoked, it can attempt to connect with
-new peers who have do not know of this revocation, each peer will have to query
-the DHT.  If this becomes the case, the DHT method will quickly become more
-inefficient.  On the flip side, the broadcast cannot ensure that all nodes
-receive the message, due to overlay network stability issues, peers may not
-be included in the broadcast.  As such the best approach may be to store a
-revocation in the DHT but notify all peers of a revocation via a broadcast.
 
 An interesting result for the broadcast is that it scales linearly as the number
 of peers in the overlay increases, as such, it is as efficient as it could
