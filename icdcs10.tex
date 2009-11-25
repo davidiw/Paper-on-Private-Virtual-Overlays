@@ -891,10 +891,11 @@ for continuing the bounded broadcast from $[b_F, y]$.  When a node receives a
 message to a range that contains its own address the message is delivered to
 that node and then routed to others in that range.  Figure \ref{fig:tree} shows
 how this bounded broadcast forms a local tree recursively.   The time required
-for a bounded broadcast is $O(\log^2 N)$.  Thus for a global broadcast, a peer
-sends does the broadcast from its node ID to the node ID immediately preceding it
-in the address space.  Additionally for security purposes, revoked peers
-are not included in the set of neighbors during the recursion stage.
+for a bounded broadcast is $O(\log^2 N)$.  To perform a broadcast on the entire
+overlay, a peer performs the bounded-broadcast starting from its node ID with the
+end address being the node ID immediately preceding its own in the address space.
+Additionally for security purposes, the revoked peer is removed from the set of
+neighbors, thus they are never responsible for forwarding the message onwards.
 
 \begin{figure}[!h]
 \centering
