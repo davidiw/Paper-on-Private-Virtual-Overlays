@@ -1,7 +1,7 @@
-latex icdcs10 -interaction=nonstopmode
-bibtex icdcs10
-latex icdcs10 -interaction=nonstopmode
-latex icdcs10 -interaction=nonstopmode
-dvips -t letter icdcs10.dvi
-ps2pdf icdcs10.ps
-xpdf icdcs10.pdf
+latex VirtualPrivateOverlays -interaction=nonstopmode
+bibtex VirtualPrivateOverlays
+latex VirtualPrivateOverlays -interaction=nonstopmode
+latex VirtualPrivateOverlays -interaction=nonstopmode
+dvips -t letter VirtualPrivateOverlays.dvi
+ps2pdf VirtualPrivateOverlays.ps
+xpdf VirtualPrivateOverlays.pdf
