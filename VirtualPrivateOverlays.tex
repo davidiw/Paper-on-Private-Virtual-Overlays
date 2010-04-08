@@ -434,7 +434,7 @@ an entry in the DHT, much like Tracker-less torrents, and connect to it so long
 as the peer is either on a public address, behind a cone NAT, or have a TURN
 connection, though a TURN connection would violate the expectation of the
 overlay lacking relay capabilities.  In other all other NAT cases, a peer must
-initiate simulataneous connection attempts in order to form a direct
+initiate simultaneous connection attempts in order to form a direct
 connection.  Furthermore, while TURN may provide relaying, it is not very
 scalable unless the features is built decentrally into the overlay.
 
@@ -477,7 +477,7 @@ Peers can perform broadcast searches with TTL up to 2, when networks consist of
 millions of peers, small overlays will most likely not be able to discover each
 other.
 &
-Not explicitly, could potentially utilitize ping messages to exchange messages.
+Not explicitly, could potentially utilize ping messages to exchange messages.
 \\ \hline
 Skype &
 Skype is a large-scale unstructured overlay, consisting of over a million
@@ -587,6 +587,7 @@ and then could become friends through XMPP, an automatable process.  Once the
 friendship has been formed, they can use XMPP as a means for relaying.
 
 \subsection{Bootstrapping Private Overlays Using Brunet}
+\label{brunet_bootstrapping}
 
 As mentioned earlier, Brunet, based upon the Symphony structured P2P overlay,
 is a freely available P2P library, supporting STUN and TURN-like NAT traversal.
@@ -600,7 +601,7 @@ peers network state, in other words, a form of passive reflection.  When a peer
 attempts to connect to another, they route ``ConnectToMe'' messages across the
 overlay informing of the remote peer of the desire to connect.  This message
 causes the peers to exchange their network information and both peers attempt
-to form connections simulataneously.  This approach of bootstrapping handles
+to form connections simultaneously.  This approach of bootstrapping handles
 all forms of NATs besides those that fall under symmetric and firewalls that
 prevent UDP.  To address these types of NATs, Brunet also supports forming
 ``Tunnels''~\cite{hpdc08_0}, where peers exchange near neighbor information.
@@ -648,6 +649,7 @@ to the soft state or leasing nature of DHT, whereupon (key, value) pairs are
 removed after a lease has expired.
 
 \subsection{Bootstrapping Private Overlays Using XMPP}
+\label{xmpp_bootstrapping}
 
 The key features that make XMPP attractive are the distributed nature of the
 federation and the openness of the protocol.  As of December 2009, there are
@@ -696,17 +698,17 @@ the IQ to implement discovery of STUN and TURN servers called
 ``Jingle''~\cite{jingle}.  These features are provided free of charge through
 GoogleTalk.
 
-Peers are able to discover other peers of seeking the same service by using the
-resource portion of the user identifier.  If the base portion of the resource
-string matches what the peer is seeking, it has found a peer seeking the same
-service.  For example, common resource strings are ``BitlBeeABC1234'' or
-``P2P.CDEFABC''.  Thus a peer seeking a P2P service would be under the
-impression that the node ``P2P.CDEFABC'' is also.  The node would then send
-an IQ to verify this and exchange network configuration information obtained
-through using their existing connection information for peers on a public
-address or the results from querying Jingle.  If the peer was part of the
-network, it would respond back with its network configuration in kind,
-otherwise it would return an error for unsupported query type.
+Peers discover each other peers by using the resource portion of the user
+identifier.  If the base portion of the resource string matches what the peer
+is seeking, it has found a peer seeking the same service.  For example, common
+resource strings are ``BitlBeeABC1234'' or ``P2P.CDEFABC''.  Thus a peer
+seeking a P2P service would be under the impression that the node
+``P2P.CDEFABC'' is also.  The node would then send an IQ to verify this and
+exchange network configuration information obtained through using their
+existing connection information for peers on a public address or the results
+from querying Jingle.  If the peer was part of the network, it would respond
+back with its network configuration in kind, otherwise it would return an error
+for unsupported query type.
 
 Once the peers have exchange this information, the two can attempt to perform
 hole punching if necessary.  If the two are unsuccessful in forming a direct
@@ -781,8 +783,150 @@ streaming.
 
 \section{Evaluating Overlay Bootstrapping}
 \label{evaluations}
+In this section, we describe our prototype implementation, the environments
+used for evaluations, and evaluate bootstrapping time for single peers to
+join the overlay and for the creation of overlays.
+
+\subsection{Our Implementation}
+
+Our implementation makes heavy use of the transports library provided by
+Brunet~\cite{brunet}.  We have extended the Brunet transports library to allow
+for sending messages between peers in one overlay to another overlay as well as
+an XMPP overlay.  The XMPP library we used is called Jabber-Net.  Each
+connection between peers is uniquely identified by employing socket like
+concepts, i.e., a pair of addresses and ports.  The basic representation for
+this constitutes a pair of identifiers of the form ``brunet://P2P\_ID:PORT'',
+where each peer has a unique ID and port associated for the local and remote
+entity.  The XMPP implementation has a similar format:
+``xmpp://USERNAME@DOMAIN:PORT/RESOURCE'', again one identifier for the local
+peer and one for the remote.
+
+For evaluation purposes, we reused the Brunet structured overlay service to
+construct a private P2P overlay.  Using a structured overlay may seem strange
+in such a small environment, though it actually applies quite cleanly.  In
+small networks, several structured overlays act as $O(1)$ systems, this
+includes Brunet and Pastry.  This value is configurable at run time, enabling
+systems to support form all-to-all connectivity with peers without user
+intervention.  A structured overlay applies unique identifiers to each peer and
+in the case that two peers are not directly connected, greedy routing methods
+can be used to route messages to each other.  Unlike unstructured systems,
+which may require that the peers know the structure of the entire system or use
+stochastic techniques to route packets between each other.
+
+\subsection{Experimental Setup}
+
+We use three quantitative methods to evaluate our proposed approach: network
+modeling, simulation, and deployments on an actual wide-area system,
+PlanetLab~\cite{planetlab}.
+
+\subsubsection{Simulations}
+
+Timing the decentralized bootstrapping of a P2P overlay from the view point of
+all participants is difficult to do using a real system.  To evaluate the
+bootstrapping, we employ time-driven simulation that reuses the core components
+of Brunet and timing delays between peers and XMPP servers using the King data
+set~\cite{king_data}.  Since the simulator models many aspects of the overlay,
+the simulation is limited to system sizes around 1,000.
+
+\subsubsection{PlanetLab}
+
+PlanetLab~\cite{planetlab} is a consortium of research institutes sharing
+hundreds of globally distributed network and computing resources.  PlanetLab
+provides a very interesting environment as there is constant unexpected churn
+of machines due to the extreme load placed on the resources and unscheduled
+system restarts.  Complementary to simulation, PlanetLab gives us a glimpse of
+what to expect from the P2P software stack when used in an actual environment
+subject to higher variance due to resource contention and churn.
+
+\subsection{Connecting to an Existing Overlay}
+
+This experiments provides light on the overall time required for a node to
+connect to a public overlay, XMPP or Brunet, and then for a subsequently to
+connect to the private overlay.  Connected, for Brunet, implies that a node has
+with the nodes whose IDs are closest in the ring (i.e., neighbors with IDs both
+smaller than and larger than the node who is joining).  The results of this
+experiment determines the time it takes to connect to a public overlay, find
+peers in the private overlay, and then connect with them.  The process for
+bootstrapping has been described in Sections \ref{brunet_bootstrapping} and
+\ref{xmpp_bootstrapping} for Brunet and XMPP, respectively.  The test was
+performed using simulations and PlanetLab.
+
+For PlanetLab, several overlays with random distribution of private nodes were
+created.  When bootstrapping from Brunet, the base public overlay consisted of
+over 600 nodes on distinct PlanetLab hosts, each node randomly decides whether
+or not to join the private overlay in order to obtain private overlays
+consisting of 5 to 600 members.  The same nodes were also instructed to connect
+with the same XMPP server using the same login credentials.  Crawling the
+overlay provided the actual amount of nodes in the private overlay.  The setup
+was then evaluated by connecting to the public overlay, both through XMPP and
+Brunet, from the same physical location using various different XMPP servers
+and node IDs.  This results in the peer obtaining results from different peers
+and creating a distribution of connection times.  During this process, the time
+it took for the public node and private nodes to connect is measured.  The
+experiments do not begin until an hour after the overlay has been deployed and
+verified to reach steady state.  This is a conservative value; experience
+suggests that overlays run on PlanetLab with various sizes can form a complete
+ring in the order of minutes.
+
+Simulation follows similar steps though with the peer count tightened to exact
+amount of peers in both the public and private overlays.  The Brunet public
+pool consists of 700 nodes, the XMPP pool and the private pool 2 to 300
+members.  After waiting for the overlay to become fully connected and
+additional 60 simulated minutes is executed to ensure steady state.  At which
+point, an additional public node with a matching private node are added to the
+system.  The results measures are the time required for them to become
+connected.
+
+%The results, Figures~\ref{fig:single_join},~\ref{fig:single_join_mod} are well
+%correlated with near identical slopes.  In all cases the time to become
+%connected with the private overlay remains reasonable and scales logarithmically
+%as network size grows.  Connection times differ amongst the sets, in the case of
+%the Simulator all the state machines are at the maximum wait delay due to lack
+%of churn in the system, whereas PlanetLab has limited overhead due to this
+%delay, and the modeler does not worry about state machine state, churn, or bad
+%connection attempts.  An important result is that PtP security does not
+%significantly add to time to joining the overlays, most likely due to the
+%majority of the time being occupied by overlay routing.
+
+\subsection{Creating an Overlay}
+
+%This experiment determines the amount of time required to bootstrap a private
+%overlay including their matching public overlay nodes using an existing network.
+%The experiment starts with a public network size of 200 public nodes with
+%various amounts of additional nodes that also have a private overlay pair.
+%Because PlanetLab is difficult to control in terms of attempting to start 200
+%public nodes simultaneously and ensuring that they do not restart
+%mid-experiment, this experiment was run using the simulator.
+
+%Figure~\ref{fig:big_join} presents the results with and without security for
+%various sized networks.  The results present a slightly different picture than
+%the previous experiment.  In this case, there is a slightly logarithmic growth
+%to the time it takes to complete an overlay.  As in the previous test, the use
+%of security has a small relative impact on the overall time to form the ring.
+
 \section{Conclusion}
 \label{conclusions}
+
+In this paper, we have established the requirements for bootstrapping small-scale
+P2P overlays, reflection, rendezvous, and relaying.  Reflection is required, so
+that peers behind NATs and firewalls can obtain a public address to share with
+remote peers.  Rendezvous is a common problem, even for large-scale systems,
+peers must have a mechanism to find other peers connecting to are are in the
+same overlay.  Finally, without relaying, peers behind NATs would be unable to
+exchange with each other their public addresses and perform NAT hole punching.
+
+As we surveyed existing overlays, we found two systems that can easily satisfy
+the requirements, XMPP and Brunet.  While Brunet can efficiently provide P2P
+services, it is an academic setup, XMPP, on the other hand, is production ready
+and distributed across many different providers, each offering
+interoperability.  The only issue with using XMPP alone is that peers must
+already be friends in order to rendezvous.  For future work, we will
+investigate how peers can leverage existing DHT deployments, such as Kad or
+Mojito, for rendezvous, form friendships automatically in XMPP, and continue
+the bootstrap process using XMPP.  Our implementation successfully deals with
+the bootstrapping problem for small-scale overlays using decentralized
+technique.
+
 %\section*{Acknowledgment}
 
 \bibliographystyle{IEEEtran}
