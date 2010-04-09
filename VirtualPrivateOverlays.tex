@@ -184,7 +184,7 @@ Large-scale P2P systems typically come in two flavors:  unstructured and
 structured.  Unstructured systems~\cite{gnutella, fasttrack} are generally
 constructed by peers attempting to maintain a certain amount of connections to
 other peers in the P2P system, whereas structured systems organize into
-well-defined topologies, such as tree,s 1-D rings, or hypercubes.  Though
+well-defined topologies, such as trees, 1-D rings, or hypercubes.  Though
 unstructured systems are typically simpler to bootstrap and maintain, they rely
 on global knowledge, flooding, or stochastic techniques to search for
 information in an overlay and thus creating potential scalability constraints.
@@ -336,6 +336,18 @@ URLs to other host caches.  For small, ad hoc networks, a host cache acts no
 differently than a centralized rendezvous point, requiring that at least one
 peer has a publicly accessible address.
 
+A similar concept to host caches is used by the ``P2P VPN''~\cite{p2pvpn} using
+a BitTorrent tracker.  In this process, one user registers a file via the hash
+of it to a centralized tracker.  In the ``P2P VPN'', this was not a file, but
+rather a unique identifier for the VPN.  Peers register with the tracker their
+IP address and are able to receive other active users IP addresses.  Peers on
+public addresses, not behind NATs or firewalls, are able to receive incoming
+connections from all other peers.  The problem with this approach is that it is
+heavily use driven.  A user must register with each BitTorrent tracker
+individually and maintain a connection with each of them, in order to handle
+cases where BitTorrent trackers go offline.  In addition, this does not use the
+BitTorrent trackers in a normal fashion, so it may be banned by tracker hosts.
+
 Research has shown that peers can use the locality properties of recent IP
 addresses in a large-scale P2P system can be used to make intelligent guesses
 about other peers in the P2P system in an approach called random
@@ -443,7 +455,11 @@ In general, the current specification does not support NAT traversal, though
 future versions may potentially use UDP NAT traversal.  At which point,
 BitTorrent may support a reflection service.
 &
+As mentioned in the previous section, peers can register as seeds to the same
+file hash, thus their IP address will be stored with the tracker.
 &
+Peers receive each other's IP addresses from the tracker, and there is no
+inherent relaying.
 \\ \hline
 Gnutella &
 Gnutella is a large-scale unstructured overlay, consisting of over a million
@@ -700,13 +716,17 @@ communication packets through XMPP IQs.
 
 \section{Applications}
 \label{applications}
+
 In this section, we present applications and potential ways to configure them
-to use a private overlay.  The applications we investigate include chat rooms,
-social networks, VPNs, and multicast.  The key to all these applications is that
-users can easily host their own services and be discovered through the use of
-a free-to-join public overlay.
+to use a private overlay.  The work relies on a public key infrastructure and
+secure point-to-point and end-to-end communication for P2P as described in our
+technical report~\cite{vpo}.  The applications we investigate include chat
+rooms, social networks, VPNs, and multicast.  The key to all these applications
+is that users can easily host their own services and be discovered through the
+use of a free-to-join public overlay.
 
 \subsection{Chat Rooms}
+
 Chat rooms provide a platform for individuals with a common interest to find
 each other, group discussion, private chat, and data exchange.  One of the most
 popular chat systems for the Internet is Internet Relay Chat (IRC).  As
@@ -722,9 +742,10 @@ available chat rooms and request access.  Structured overlays do not require
 global knowledge and can be configured to handle connectivity issues.
 Additionally, IRC by default uses clear text messaging and even if security is
 used a server will be aware of the content of the message, two issues resolved
-by using PtP security in a private overlay chat room.  
+by using point-to-point security.
 
 \subsection{Social Networks}
+
 Social networks such as Facebook and MySpace provide an opportunity for users
 to indirectly share information with friends, family, and peers via a profile
 containing personal information, status updates, and pictures.  Most social
@@ -744,25 +765,27 @@ or online.  Each user's social network would than consist of the accumulation
 of the individual private overlays and the public overlay.
 
 \subsection{P2P VPNs}
-Private overlays enable P2P VPNs.  The most common type of VPNs are centralized
-VPNs like OpenVPN, which requires that a centralized set of resources handle
-session initialization and communication.  Another approach taken by Hamachi
-and many others is to maintain a central server for session initialization but
-allow communication to occur directly between peers and providing a central
-relay when NAT traversal fails.  Using a structured private overlay allows
-users to host their own VPNs, where each VPN end points is responsible for its
-own session initialization and communication.  The private overlay also
-provides mechanisms for handling failed NAT traversal attempts via relaying.
+
+Private overlays enable truly decentralized P2P VPNs.  The most common type of
+VPNs are centralized VPNs like OpenVPN, which requires that a centralized set
+of resources handle session initialization and communication.  Another approach
+taken by Hamachi and many others is to maintain a central server for session
+initialization but allow communication to occur directly between peers and
+providing a central relay when NAT traversal fails.  SocialVPN~\cite{socialvpn}
+relies on a dedicated bootstrap overlay provided by University of Florida.
+Using the techniques described in this paper, a decentralized VPN can be
+bootstrapped with NAT traversal support.
 
 \subsection{Multicast}
+
 The topic of secure multicast has been a focus of much research.  Using an
 approach similar to CAN~\cite{can_multicast}, a virtual private overlay forms a
 ring where all nodes are members of the multicast group with the additional
 feature that you can trust that your audience is limited to those in the
 overlay.  The main advantage of such multicasting technologies would be for
-wide-area, distributed multicast.  Examples of such services include light
-weight multicast DNS / DNS-SD (service discovery), as well as audio and video
-streaming.
+wide-area, distributed multicast as described in~\cite{from_peer}.  Examples of
+such services include light weight multicast DNS / DNS-SD (service discovery),
+as well as audio and video streaming.
 
 \section{Evaluating Overlay Bootstrapping}
 \label{evaluations}
