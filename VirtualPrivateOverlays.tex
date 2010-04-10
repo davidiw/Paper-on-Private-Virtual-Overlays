@@ -177,11 +177,10 @@ common P2P overlay technologies, motivating examples for this work, existing
 solutions to the bootstrapping problem, and NAT challenges in P2P systems.  In
 Section~\ref{overview}, we present a survey of overlays, applying the
 requirements for private overlay bootstrapping to them, and then show in detail
-how they can be applied to Brunet and XMPP.  Various applications that can be
-enabled by this architecture are described in Section~\ref{applications}.  In
-Section~\ref{evaluations}, we then perform a timing evaluation of bootstrapping
-overlays using our prototype running on PlanetLab.  Finally, we conclude the
-paper with Section~\ref{conclusions}.
+how they can be applied to Brunet and XMPP.  In Section~\ref{evaluations}, we
+then perform a timing evaluation of bootstrapping overlays using our prototype
+running on PlanetLab.  Finally, we conclude the paper with
+Section~\ref{conclusions}.
 
 \section{Background}
 \label{background}
@@ -243,11 +242,9 @@ due to connectivity issues between servers, and lack of privacy.  Private
 overlays could be extended to support the features of IRC and potentially deal
 with these inherent issues.  Each chat room would be mapped to a private
 overlay and the public overlay would be used as a directory to learn about
-available chat rooms and request access.  Structured overlays do not require
-global knowledge and can be configured to handle connectivity issues.
-Additionally, IRC by default uses clear text messaging and even if security is
-used a server will be aware of the content of the message, two issues resolved
-by using point-to-point security.
+available chat rooms and request access.  Structured overlays could easily be
+used as servers for IRC, do not require global knowledge, and can be configured
+to handle connectivity issues.
 
 \subsubsection{Social Networks}
 
@@ -258,28 +255,29 @@ network structures rely on hosted systems, where they become the keepers of
 user data, which creates privacy and trust concerns.  Private overlays can
 remove this third party, making users the only owner of their data.  For this
 model, we propose that each user's profile be represented by a private overlay
-and that each of their friends become members of this overlay.  The overlay
-will consist of a secured DHT, where only writes made by the overlay owner are
-valid and only members of the overlay have access to the content stored in it.
-In addition to bootstrapping the private overlays, the public overlay would be
-used as a directory for users to find and befriend each other.  For fault
-tolerance and scalability, each user provides a copy of their profile locally,
-which will be distributed amongst the private overlay in a read-only DHT,
-therefore, allowing the user's profile to be visible whether they are offline
-or online.  Each user's social network would than consist of the accumulation
-of the individual private overlays and the public overlay.
+consisting of their friends.  The overlay should include a secured DHT, where
+only all writes are signed to uniquely identify the creator and may only be
+removed by the owner of the overlay.  In addition to bootstrapping the private
+overlays, the public overlay would be used as a directory for users to find and
+befriend each other.  For fault tolerance and scalability, each user provides a
+copy of their profile locally, which will be distributed amongst the private
+overlay in a read-only DHT, therefore, allowing the user's profile to be
+visible whether they are offline or online.  Each user's social network would
+than consist of the accumulation of the individual private overlays and the
+public overlay.
 
 \subsubsection{P2P VPNs}
 
-Private overlays enable truly decentralized P2P VPNs.  The most common type of
+Private overlays enable truly decentralized, P2P VPNs.  The most common type of
 VPNs are centralized VPNs like OpenVPN, which requires that a centralized set
 of resources handle session initialization and communication.  Another approach
 taken by Hamachi and many others is to maintain a central server for session
 initialization but allow communication to occur directly between peers and
 providing a central relay when NAT traversal fails.  SocialVPN~\cite{socialvpn}
 relies on a dedicated bootstrap overlay provided by University of Florida.
-Using the techniques described in this paper, a decentralized VPN can be
-bootstrapped with NAT traversal support.
+Using the techniques described in this paper, SocialVPN could be extended so
+that it can be bootstrapped into private systems without additional user
+configuration.
 
 \subsubsection{Multicast}
 
@@ -830,8 +828,8 @@ contention and churn.
 
 GoogleTalk provided the XMPP overlay used in this experiment.  Though this
 experiment does not take into advantage the features of the XMPP Federation,
-this aspect is presented in more detail in the section reviewing experiences
-deploying overlays using XMPP, Section~\ref{xmpp_deployment}.
+this aspect is presented in more detail in the next section reviewing
+experiences deploying overlays using XMPP.
 
 \subsection{Deployment Experiences}
 
@@ -860,9 +858,37 @@ Given that there was no way to exchange arbitrary information and the
 rendezvous service was crippled, at this point in time, it appears there is no
 way to bootstrap an overlay using Facebook.
 
-Talk about bootstrapping across planetlab and the killing of the xmpp server.
+During initial tests in verifying the workings of the XMPP code base, we
+bootstrapped a  private Brunet overlay on PlanetLab through various XMPP
+service providers.  Interestingly, GoogleTalk servers seem to ignore machines
+on PlanetLab.  Using another provider, the service appeared to crash after 257
+instances of the same account were online.  Unfortunately, the provider had no
+contact information available, so we were unable to determine if our test
+caused the crash.  There was one server that appeared have no trouble hosting
+600 concurrent instances of a single XMPP user, ``jabber.rootbash.com''.  The
+nodes were able to rendezvous and relay through \textit{rootbash} and form a
+connected P2P system.  The setup did not require reflection, as PlanetLab
+resources all have public IP addresses.
 
-Talk about bootstrapping across xmpp federated servers.
+Once the system was running on PlanetLab, more tests were performed to
+determine the ability to bootstrap across the XMPP Federation.  We formed
+friendships, or subscriptions, between users across a few different XMPP
+service providers.  In the most evaluated case, a single peer on GoogleTalk and
+the PlanetLab system using \textit{rootbash}, the GoogleTalk peer would not
+always receive presence notifications for all peers online, though always would
+receive some.  When a peer began the relaying mechanism, itr would broadcast to
+every peer, it rendezvoused or discovered.  When performing this between
+GoogleTalk and \textit{rootbash}, the GoogleTalk peer would not receive a
+response.  Though in reducing the broadcast to a random selection of 10 peers,
+every 10 seconds until the GoogleTalk peer was connected, the peer received
+responses.  The behavior indicates that the XMPP servers may have been
+filtering to prevent denial of service attacks.  One last note, when
+bootstrapping a peer from GoogleTalk into the \textit{rootbash} system, it
+always took 1 minute for the node to become fully connected to the private
+overlay.  When the peer used \textit{rootbash}, the peer always connected
+within 30 seconds.  It seems as if the communication between XMPP servers was
+being delayed for some reason.  The same behavior was not experienced, when
+chatting between the two peers.
 
 \section{Conclusion}
 \label{conclusions}
