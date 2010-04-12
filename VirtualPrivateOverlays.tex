@@ -45,24 +45,25 @@ services for small-scale P2P systems.  In large networks, the solution to the
 bootstrap problem has been the use of dedicated services, though creating and
 maintaining these systems requires expertise and resources, which constrain
 their usefulness and make them unappealing for small-scale systems.
-Decentralized, P2P systems can be useful in small-scale systems for privacy
-concerns as well as supporting network applications that lack dedicated,
+Decentralized, P2P systems can be useful in small-scale systems to address privacy
+concerns as well as support for network applications that lack dedicated,
 centralized bootstrap servers.
 
-The novel contributions of this paper are techniques and implemented solutions
-that decentrally bootstrap small-scale overlays through the use of existing
-public overlays.  In order to support bootstrapping a public overlay must
-support the following requirements: a method for reflection in order to
-obtaining a publicly reachable address, so peers behind network address
-translators and firewalls can handle incoming connection requests; rendezvous
-for discovering remote peers, when the overlay lacks stable membership; and
-communication relaying to share public addresses and communicate when direct
-communication is not feasible.  After presenting a survey of various public
-overlays, we identify two overlays that match the requirements:  XMPP overlays,
-such as Google Talk and Live Journal Talk, and Brunet, a structured overlay
-based upon Symphony.  We have implemented prototypes for each of these overlays
-and present qualitative experiences in using them to bootstrap small-scale
-overlays.
+This paper surveys and summarizes requirements that allow peers potentially
+constrained by network connectivity to bootstrap small-scale overlays through
+the use of existing public overlays.  In order to support bootstrapping a
+public overlay must support the following requirements: a method for reflection
+in order to obtaining a publicly reachable address, so peers behind network
+address translators and firewalls can handle incoming connection requests;
+rendezvous for discovering remote peers, when the overlay lacks stable
+membership; and communication relaying to share public addresses and
+communicate when direct communication is not feasible.  After presenting a
+survey of various public overlays, we identify two overlays that match the
+requirements:  XMPP overlays, such as Google Talk and Live Journal Talk, and
+Brunet, a structured overlay based upon Symphony.  We present qualitative
+experiences with prototypes that demonstrate the ability to bootstrap
+small-scale private structured overlays from public Brunet or XMPP
+infrastructures.
 
 \end{abstract}
 
@@ -73,16 +74,17 @@ for distributed applications, their adoption rate for use across the Internet
 has been slow outside of large-scale systems, such as data distribution and
 communication.  General use of decentralized, P2P applications targeting homes
 and small/medium businesses (SMBs) has been limited in large part due to
-difficulty in decentralized discovery of P2P systems, the bootstrap problem,
-further inhibited by constrained network conditions due to firewalls and NATs
-(network address translators).  While these environments could benefit from
-P2P, many of these users lack the resources or expertise necessary to bootstrap
-private~\footnote{In the context of this paper, private implies that the
-overlay's purpose is not for general purpose and not that it is secure or
-secret.}  P2P overlays particularly when the member state is unsteady and
-across wide-area network environments where a significant amount of or all
-peers may be unable to initiate direct communication with each other due to
-firewalls and NATs.
+difficulty in decentralized discovery of P2P systems --- the bootstrap problem
+--- further inhibited by constrained network conditions due to firewalls and
+NATs (network address translators).  While these environments could benefit
+from P2P, many of these users lack the resources or expertise necessary to
+bootstrap private~\footnote{In the context of this paper, private implies that
+the overlay's purpose is not for general use. Once established, such overlays
+can support privacy in communication; however, overlay security is beyond the
+scope of this paper.} P2P overlays particularly when the membership is unsteady
+and across wide-area network environments where a significant amount of (or
+all) peers may be unable to initiate direct communication with each other due
+to firewalls and NATs.
 
 Examples of large-scale P2P systems include Skype, BitTorrent, and Gnutella.
 Skype is a voice over P2P system, whereas BitTorrent and Gnutella are used for
@@ -91,27 +93,27 @@ maintainers using high availability systems for bootstrapping, bundling their
 connection information with the application for distribution.  When the
 application is started, it uses these high availability servers to connect with
 other peers in the system.  Alternatively, some services constantly crawl the
-network and place peer lists on dedicated web sites, a new peer wishing to join
+network and place peer lists on dedicated web sites. A new peer wishing to join
 the network queries the web site and then attempts to connect to the peers on
 that list.
 
-In smaller-scale systems, P2P interests focuses on decentralization.  For
+In smaller-scale systems, P2P interests focus on decentralization.  For
 example, users may desire to run an application at many distributed sites, but
 the application lacks dedicated central servers to provide discovery or
-rendezvous service for peers.  Alternatively, dedicated, centralized P2P
-service providers, such as LogMeIn's Hamachi, a P2P VPN, may collect usage
-data, which the users may wish to remain private, or are not free to use.
+rendezvous service for peers.  In contrast, dedicated, centralized P2P service
+providers, such as LogMeIn's Hamachi, a P2P VPN, may collect usage data, which
+the users may wish to remain private, or are not free to use.
 
-Many applications make sense for small-scale usage including multiplayer games,
-especially those that never or no longer have dedicated online services;
-private data sharing; and even distributed file systems.  Clearly, a small P2P
-system could be bootstrapped by one or more users of the system running on
-public addresses, distributing addresses through e-mail or phone, instructing
-his peers to connect to add that address to their P2P application, and then
-initiate bootstrapping; but these types of situations are an exception and not
-the norm.  Ultimately, users require an approach that can make decentralized
-bootstrapping transparent through minimal and intuititive interaction with the
-P2P component.
+Many applications of small-scale P2P overlays can be envisioned, including
+multiplayer games, especially those that never or no longer have dedicated
+online services; private data sharing; and even distributed file systems.
+Clearly, a small P2P system could be bootstrapped by one or more users of the
+system running on public addresses, distributing addresses out-of-band,
+instructing their peers to connect to add that address to their P2P
+application, and then initiate bootstrapping; but these types of situations are
+an exception and not the norm.  Ultimately, users require an approach that can
+make decentralized bootstrapping transparent through minimal and intuititive
+interaction with the P2P component.
 
 \begin{figure*}[h!t!]
 \centering
@@ -120,40 +122,40 @@ P2P component.
 \label{fig:bootstrap}
 \end{figure*}
 
-The basic bootstrapping process can be broken down into two components finding
-a remote peer and then successively connecting to it and more peers.  When a
+The basic bootstrapping process can be broken down into two components: finding
+a remote peer, and then successively connecting to it and more peers.  When a
 node begins, it contacts various bootstrap servers, until it successfully
 connects with one, upon which they exchange information.  The bootstrap server
 may inquire into the overlay for the best set of peers for the new peer and
 respond with that information or it may respond with its existing neighbor set.
 At which point, the peer attempts to connect with those peers.  This process
 continues aggressively until the peer arrives at a steady state, either
-connecting with a set of specific set or count peers.  Afterward, the P2P logic
-becomes passive, only reacting to churn, that is new incoming peers or outgoing
+connecting with a specific set of or a number of peers.  Afterwards, the P2P logic
+becomes passive, only reacting to churn from new incoming peers or outgoing
 peers.
 
-Overlay support for constrained peers, those behind NATs and restrictive
+Overlay support for constrained peers, i.e., those behind NATs and restrictive
 firewalls, requires additional features to support all-to-all connectivity for
 peers in the overlay.  The instantiation of P2P systems for private use could
 become overly burdensome, potentially relying on significant human interaction
 to bootstrap them, for example, by relaying connection information through
 phone calls and e-mail.  Even if this is feasible, this sort of interaction is
-undesirable, P2P systems should be self-discovering so that users need to do
-minimal amount of work to take advantage of them and ad hoc systems stress this
-point.  In addition, these may rely on centralized components, if they become
+undesirable; P2P systems should be self-discovering so that users need to do
+minimal amount of work to take advantage of them and ad-hoc systems stress this
+point.  In addition, these may rely on centralized components; if they become
 unavailable, which is a possibility since most users lack the expertise in
 configuring highly available systems, the system will not be accessible.
 
 To address this, we explore the use of existing public overlays as a means to
-bootstrap private overlays.  There are many existing wide-spread systems with
-high availability, such as Skype, Gnutella, XMPP, and BitTorrent; by leveraging
-these systems, system integrators can easily enable users to seamlessly
-bootstrap their own private P2P systems.  In the preceding paragraphs, we
-identified the components necessary for bootstrapping a homogeneous system, now
-we expand them for environments to support the bootstrapping of a private
-overlay from a public overlay with consideration for network constrained peers.
-The public overlay must support the following mechanisms as illustrated in
-Figure~\ref{fig:bootstrap}:
+bootstrap small-scale private overlays.  There are many existing public
+overlays with high availability, such as Skype, Gnutella, XMPP, and BitTorrent;
+by leveraging these systems, system integrators can easily enable users to
+seamlessly bootstrap their own private P2P systems.  In the preceding
+paragraphs, we identified the components necessary for bootstrapping a
+homogeneous system; now we expand them for environments to support the
+bootstrapping of a private overlay from a public overlay with consideration for
+network constrained peers.  The public overlay must support the following
+mechanisms as illustrated in Figure~\ref{fig:bootstrap}:
 \begin{enumerate}
 \item \textbf{Reflection} - Constrained peers must have some method of
 determining their Internet connection information, to share with other
@@ -164,13 +166,13 @@ public overlay must be able to identify each other.
 share connection information and to enable direct links across NATs when
 possible or, otherwise, as a relay.
 \end{enumerate}
-This work motivates from the belief that what prevents use of P2P systems is
-due to lack the resources, technical knowledge, and lack of ability and desire
-to create and manage high availability bootstrap services.  A public overlay
-can be used to transparently bootstrap a private overlay with minimal user
-interaction.
+This work motivates from the belief that what prevents use of small-scale P2P
+systems is due to lack the resources, technical knowledge, and lack of ability
+and desire to create and manage high availability bootstrap services.  A public
+overlay can be used to transparently bootstrap a private overlay with minimal
+user interaction.
 
-The requirements will be presented and verified in the context of two prototype
+The requirements are presented and verified in the context of two prototype
 implementations: a XMPP (Jabber)~\cite{xmpp} and Brunet~\cite{brunet}.  XMPP or
 Extensible Messaging and Presence Protocol based overlays are commonly used as
 chat portals, such as GoogleTalk and Facebook Chat.  XMPP also supports an
