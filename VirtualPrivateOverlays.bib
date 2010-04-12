@@ -365,7 +365,7 @@ Architectural support for programming languages and operating systems},
 @article{planetlab,
   author = {Chun, Brent and Culler, David and Roscoe, Timothy and Bavier, Andy and Peterson, Larry and Wawrzoniak, Mike and Bowman, Mic},
   title = {PlanetLab: an overlay testbed for broad-coverage services},
-  journal = {SIGCOMM Comput. Commun. Rev.},
+  journal = {SIGCOMM},
   year = {2003}
 }
 
@@ -724,7 +724,6 @@ in Wide Area Overlays of Virtual Workstations},
   title = {Improving Peer Connectivity in Wide-area Overlays of Virtual Workstations},
   booktitle = {HPDC},
   year = {2008},
-  month = {6}
 }
 
 @inproceedings{cops08,
@@ -1057,7 +1056,7 @@ in Wide Area Overlays of Virtual Workstations},
 @inproceedings{pastry,
   title    = "Pastry: {Scalable,} decentralized object location and routing for large-scale peer-to-peer systems",
         author   = "Antony Rowstron and Peter Druschel",
-  booktitle= "IFIP/ACM International Conference on Distributed Systems Platforms (Middleware)",
+  booktitle= "International Conference on Distributed Systems Platforms (Middleware)",
         year     = {2001},
         month    = {November}
 }
@@ -1073,7 +1072,7 @@ in Wide Area Overlays of Virtual Workstations},
 
 @inproceedings{can,
     author = {Ratnasamy, Sylvia and Francis, Paul and Shenker, Scott and Handley, Mark},
-    booktitle = {In Proceedings of ACM SIGCOMM},
+    booktitle = {SIGCOMM},
     keywords = {can, structuredp2p},
     title = {A Scalable Content-Addressable Network},
     year = {2001}
@@ -1209,7 +1208,7 @@ in Wide Area Overlays of Virtual Workstations},
 @inproceedings{vini,
   author = {Bavier, Andy and Feamster, Nick and Huang, Mark and Peterson, Larry and Rexford, Jennifer},
   title = {In {VINI} veritas: realistic and controlled network experimentation},
-  booktitle = {In SIGCOMM'06},
+  booktitle = {SIGCOMM},
   year = {2006}
 }
 
@@ -1345,12 +1344,8 @@ in Wide Area Overlays of Virtual Workstations},
 @inproceedings{tcp_nat,
   author = {Guha, Saikat and Francis, Paul},
   title = {Characterization and measurement of TCP traversal through NATs and firewalls},
-  booktitle = {IMC '05: Proceedings of the 5th ACM SIGCOMM conference on Internet Measurement},
+  booktitle = {ACM SIGCOMM conference on Internet Measurement},
   year = {2005},
-  pages = {18--18},
-  location = {Berkeley, CA},
-  publisher = {USENIX Association},
-  address = {Berkeley, CA, USA},
 }
 
 @inproceedings{p2p_nats,
@@ -1427,24 +1422,56 @@ in Wide Area Overlays of Virtual Workstations},
 }
 
 @misc{gnutella,
+  author = {T. Klingberg and R. Manfredi},
+  year = {2002},
+  month = {June},
+  title = {Gnutella 0.6},
+  howpublished = {\url{http://rfc-gnutella.sourceforge.net/src/rfc-0_6-draft.html}}
 }
 
 @misc{xmpp,
+  author = {P. Saint-Andre},
+  year = {2004},
+  month = {October},
+  title = {{RFC 3920} Extensible Messaging and Presence Protocol ({XMPP}): Core},
 }
 
 @misc{fasttrack,
+  author = {hex},
+  title = {The FastTrack Protocol},
+  year = {2004},
+  month = {September},
+  howpublished = {\url{http://cvs.berlios.de/cgi-bin/viewcvs.cgi/gift-fasttrack/giFT-FastTrack/PROTOCOL}}
 }
 
 @inproceedings{beehive,
+ author = {Ramasubramanian, Venugopalan and Sirer, Emin G\"{u}n},
+ title = {Beehive: O(1)lookup performance for power-law query distributions in peer-to-peer overlays},
+ booktitle = {Symposium on Networked Systems Design and Implementation},
+ year = {2004},
 }
 
 @misc{cassandra,
+  title = {Cassandra – A structured storage system on a {P2P} Network},
+  author = {Avinash Lakshman},
+  year = {2008},
+  month = {August},
+  howpublished = {\url{http://www.facebook.com/note.php?note_id=24413138919}}
 }
 
 @misc{stun_rfc,
+  title = {{RFC 3489} Session Traversal Utilities for NAT ({STUN})},
+  author = {J. Rosenberg and R. Mahy and P. Matthews and D. Wing},
+  year = {2008},
+  month = {October}
 }
 
 @misc{teredo,
+  author = {Microsoft},
+  title = {Teredo Overview},
+  year = {2007},
+  month = {January},
+  howpublished = {\url{http://technet.microsoft.com/en-us/library/bb457011.aspx}}
 }
 
 @inproceedings{kosha,
@@ -1463,16 +1490,24 @@ in Wide Area Overlays of Virtual Workstations},
 }
 
 @inproceedings{opendht,
-  author = {Rhea, Sean and Godfrey, Brighten and Karp, Brad and Kubiatowicz, John and Ratnasamy, Sylvia and Shenker, Scott and Stoica, Ion and Yu, Harlan},
+  author = {Rhea, Sean and et al.},
   title = {OpenDHT: a public DHT service and its uses},
-  booktitle = {SIGCOMM '05: Proceedings of the 2005 conference on Applications, technologies, architectures, and protocols for computer communications},
+  booktitle = {SIGCOMM},
   year = {2005},
 }
 
 @misc{xmpp_servers,
+  title = {Public {XMPP} Services},
+  howpublished = {\url{http://xmpp.org/services/}},
+  year = {2009},
+  month = {December}
 }
 
 @misc{jingle,
+  title = {{XEP}-0166: Jingle},
+  author = {Scott Ludwig and et al.},
+  year = {2009},
+  month = {December}
 }
 
 @inproceedings{vpo,
@@ -1482,4 +1517,36 @@ in Wide Area Overlays of Virtual Workstations},
   howpublished = {\{http://arxiv.org/abs/1001.2569}},
   month = {January},
   year = {2010}
+}
+
+@inproceedings{pvc,
+  author = {Rezmerita, Ala and Morlier, Tangui and Neri, Vincent and Cappello, Frank},
+  title = {Private Virtual Cluster: Infrastructure and Protocol for Instant Grids},
+  booktitle = {Euro-Par},
+  year = {2006},
+  month = {November}
+}
+
+@misc{ice-tcp,
+}
+
+@misc{upnp,
+  title = {{UPnP} Device Architecture 1.1},
+  month = {October},
+  year = {2008},
+  howpublished = {\url{http://www.upnp.org/specs/arch/UPnP-arch-DeviceArchitecture-v1.1.pdf}},
+}
+
+@inproceedings{socialvpn,
+}
+
+@inproceedings{tcp-hole-punching,
+  author = {Biggadike, A. and Ferullo, D. and Wilson, G. and A. Perrig},
+  title = {{NATBLASTER}: Establishing {TCP} connections between hosts behind {NAT}s},
+  year = {2005},
+  month = {April},
+  booktitle = {ACM SIGCOMM Asia Workshop}
+}
+
+@misc{from_peer,
 }
