@@ -103,16 +103,15 @@ rendezvous service for peers.  In contrast, dedicated, centralized P2P service
 providers, such as LogMeIn's Hamachi, a P2P VPN, may collect usage data, which
 the users may wish to remain private, or are not free to use.
 
-Many applications of small-scale P2P overlays can be envisioned, including
-multiplayer games, especially those that never or no longer have dedicated
-online services; private data sharing; and even distributed file systems.
-Clearly, a small P2P system could be bootstrapped by one or more users of the
-system running on public addresses, distributing addresses out-of-band,
-instructing their peers to connect to add that address to their P2P
-application, and then initiate bootstrapping; but these types of situations are
-an exception and not the norm.  Ultimately, users require an approach that can
-make decentralized bootstrapping transparent through minimal and intuititive
-interaction with the P2P component.
+Many applications make senes for small-scale overlay usage, including
+multiplayer games, especially those that lack dedicated online services;
+private data sharing; and even distributed file systems.  Clearly, a small P2P
+system could be bootstrapped by one or more users of the system running on
+public addresses, distributing addresses out-of-band, instructing their peers
+to connect to add that address to their P2P application, and then initiate
+bootstrapping; but these types of situations are an exception and not the norm.
+Ultimately, users require an approach that can make decentralized bootstrapping
+transparent through minimal and intuititive interaction with the P2P component.
 
 \begin{figure*}[h!t!]
 \centering
@@ -146,7 +145,7 @@ unavailable, which is a possibility since most users lack the expertise in
 configuring highly available systems, the system will not be accessible.
 
 To address this, we explore the use of existing public overlays as a means to
-bootstrap small-scale private overlays.  There are many existing public
+bootstrap private overlays.  There are many existing public
 overlays with high availability, such as Skype, Gnutella, XMPP, and BitTorrent;
 by leveraging these systems, system integrators can easily enable users to
 seamlessly bootstrap their own private P2P systems.  In the preceding
