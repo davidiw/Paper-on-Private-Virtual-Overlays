@@ -8,21 +8,21 @@
 \usepackage{footnote}
 
 \setlength{\parskip}{0pt}
-\setlength{\parsep}{0pt}
+\setlength{\parsep}{5pt}
 \setlength{\headsep}{0pt}
 \setlength{\topskip}{0pt}
 \setlength{\topmargin}{0pt}
 \setlength{\topsep}{0pt}
 \setlength{\partopsep}{0pt}
-\setlength{\floatsep}{5pt}
-\setlength{\textfloatsep}{5pt}
-\setlength{\intextsep}{5pt}
+\setlength{\floatsep}{0pt}
+\setlength{\textfloatsep}{0pt}
+\setlength{\intextsep}{0pt}
 
 \widowpenalty=10000
 \clubpenalty=10000
 
 \begin{document}
-\title{Addressing the P2P Boostrap Problem for Small Overlay Networks}
+\title{Addressing the P2P Bootstrap Problem for Small Overlay Networks}
 
 \author{
 %\IEEEauthorblockN{David Isaac Wolinsky, Pierre St. Juste, P. Oscar Boykin,
@@ -55,15 +55,14 @@ the use of existing public overlays.  In order to support bootstrapping a
 public overlay must support the following requirements: a method for reflection
 in order to obtaining a publicly reachable address, so peers behind network
 address translators and firewalls can handle incoming connection requests;
-rendezvous for discovering remote peers, when the overlay lacks stable
-membership; and communication relaying to share public addresses and
-communicate when direct communication is not feasible.  After presenting a
-survey of various public overlays, we identify two overlays that match the
-requirements:  XMPP overlays, such as Google Talk and Live Journal Talk, and
-Brunet, a structured overlay based upon Symphony.  We present qualitative
-experiences with prototypes that demonstrate the ability to bootstrap
-small-scale private structured overlays from public Brunet or XMPP
-infrastructures.
+communication relaying to share public addresses and communicate when direct
+communication is not feasible; and rendezvous for discovering remote peers,
+when the overlay lacks stable membership.  After presenting a survey of various
+public overlays, we identify two overlays that match the requirements:  XMPP
+overlays, such as Google Talk and Live Journal Talk, and Brunet, a structured
+overlay based upon Symphony.  We present qualitative experiences with
+prototypes that demonstrate the ability to bootstrap small-scale private
+structured overlays from public Brunet or XMPP infrastructures.
 
 \end{abstract}
 
@@ -157,14 +156,12 @@ bootstrapping of a private overlay from a public overlay with consideration for
 network constrained peers.  The public overlay must support the following
 mechanisms as illustrated in Figure~\ref{fig:bootstrap}:
 \begin{enumerate}
-\item \textbf{Reflection} - Constrained peers must have some method of
-determining their Internet connection information, to share with other
-constrained peers to enable direct connectivity.
-\item \textbf{Rendezvous} - Peers seeking members of a private overlay in a
-public overlay must be able to identify each other.
-\item \textbf{Relaying} - Peers must be able to exchange arbitrary data to
-share connection information and to enable direct links across NATs when
-possible or, otherwise, as a relay.
+\item \textbf{Reflection} - A method for obtaining global identifiers for a
+peer that can be shared with others to enable direct communication.
+\item \textbf{Relaying} - A method for peers to exchange arbitrary data, when
+a direct IP link is unavailable.
+\item \textbf{Rendezvous} - A method for identifying peers interested in the
+same P2P service.
 \end{enumerate}
 This work motivates from the belief that what prevents use of small-scale P2P
 systems is due to lack the resources, technical knowledge, and lack of ability
@@ -195,112 +192,48 @@ timing evaluation of bootstrapping overlays using our prototype PlanetLab and
 discuss experiences in deploying the system.  Finally, we conclude the paper
 with Section~\ref{conclusions}.
 
-\section{Background}
+\section{Motivation and Background}
 \label{background}
 
-Large-scale P2P systems typically come in two flavors:  unstructured and
-structured.  Unstructured systems~\cite{gnutella, fasttrack} are generally
-constructed by peers attempting to maintain a certain amount of connections to
-other peers in the P2P system, whereas structured systems organize into
-well-defined topologies, such as trees, 1-D rings, or hypercubes.  Though
-unstructured systems are typically simpler to bootstrap and maintain, they rely
-on global knowledge, flooding, or stochastic techniques to search for
-information in an overlay, creating potential scalability constraints.
-Alternatively, structured systems~\cite{pastry, chord, symphony, kademlia,
-can}.  Structured overlays have guaranteed search time typically with a lower
-bound of $O(\log N)$ and in some cases even $O(1)$~\cite{beehive}.
+Private overlays enable truly decentralized, P2P VPNs.  A P2P VPN enables the
+reuse of existing network applications on a P2P overlay without modifications.
+The challenges of reflection, relaying, and rendezvous exist significantly in
+these systems.  In centralized VPNs like OpenVPN, the dedicated server handle
+provides for all three services.  P2P VPN solutions like Hamachi provide
+similar features, though enable peers to form direct connectivity with each
+other to bypass the server.  A decentralized P2P VPN solution like our
+SocialVPN~\cite{socialvpn} relies on a dedicated bootstrap overlay provided by
+an academic institution.  Using the techniques described in this paper,
+SocialVPN could be extended so that it can be bootstrapped into private systems
+without additional user configuration and relying on sustainable large-scale
+public overlays.
 
-Most structured overlays support a decentralized storage / retrieval system
-called a distributed hash table (DHT), that maps keys with associated data to
-specific node IDs in an overlay.  At a minimum, the data is stored at the node
-ID either smaller or larger to the data's key, for fault tolerance the data can
-be stored at other nodes.  DHTs can be used by peers of systems to coordinate
-allocation and discovery of resources, making them attractive for
-self-configuration in decentralized collaborative environments.
+Examples of decentralized P2P infrastructures that can assist with the
+bootstrap problem are unstructed and structured systems.  Unstructured
+systems~\cite{gnutella, fasttrack} are generally constructed by peers
+attempting to maintain a certain amount of connections to other peers in the
+P2P system, whereas structured systems organize into well-defined topologies,
+such as trees, 1-D rings, or hypercubes.  Though unstructured systems are
+typically simpler to bootstrap and maintain, they rely on global knowledge,
+flooding, or stochastic techniques to search for information in an overlay,
+creating potential scalability constraints.  Alternatively, structured
+systems~\cite{pastry, chord, symphony, kademlia, can} have guaranteed search
+time typically with a lower bound of $O(\log N)$ and in some cases even
+$O(1)$~\cite{beehive}.  The most common feature found in structured overlays is
+the support for a decentralized storage / retrieval system called a distributed
+hash table (DHT), that maps keys with associated data to specific node IDs in
+an overlay.  
 
 Another subset found of P2P systems are those that are not fully decentralized,
-such as ``P2P VPNs'' like Hamachi~\cite{hamachi}, older systems like the
-original Napster, and tracker-based BitTorrent.  These types of systems provide
-a rendezvous services for peers to discover each other to form direct, or P2P,
-connections with each other for the purpose of network connectivity or data
-sharing.  BitTorrent differentiates itself by using the trackers as a gateway
-into the overlay, once inside, peers exchange connection information with each
-other directly relegating the tracker as a fall back.  This approach has
-enabled BitTorrent to be modified to support trackerless torrents through using
-a DHT.
+and deal with the bootstrap problem explicitly through centralized resources.
+These include ``P2P VPNs'' like Hamachi~\cite{hamachi}, older systems like the
+original Napster, and tracker-based BitTorrent.  BitTorrent differentiates
+itself by using the trackers as a gateway into the overlay, once inside, peers
+exchange connection information with each other directly relegating the tracker
+as a fall back.  This approach has enabled BitTorrent to be modified to support
+trackerless torrents through using a DHT.
 
-\subsection{Applications}
-
-In this section, we present applications and potential ways to configure them
-to use a private overlay.  The work relies on a public key infrastructure and
-secure point-to-point and end-to-end communication for P2P as described in our
-technical report~\cite{vpo}.  The applications we investigate include chat
-rooms, social networks, VPNs, and multicast.  The key to all these applications
-is that users can easily host their own services and be discovered through the
-use of a free-to-join public overlay.
-
-\subsubsection{Chat Rooms}
-
-Chat rooms provide a platform for individuals with a common interest to find
-each other, group discussion, private chat, and data exchange.  One of the most
-popular chat systems for the Internet is Internet Relay Chat (IRC).  As
-described in~\cite{irc}, IRC supports a distributed tree system, where clients
-connect to a server, and servers use a mixture of unicast and multicast to
-distribute messages.  The issues with IRC are documented by~\cite{irc_arch},
-namely, scalability due to all servers needing global knowledge, reliability
-due to connectivity issues between servers, and lack of privacy.  Private
-overlays could be extended to support the features of IRC and potentially deal
-with these inherent issues.  Each chat room would be mapped to a private
-overlay and the public overlay would be used as a directory to learn about
-available chat rooms and request access.  Structured overlays could easily be
-used as servers for IRC, do not require global knowledge, and can be configured
-to handle connectivity issues.
-
-\subsubsection{Social Networks}
-
-Social networks such as Facebook and MySpace provide an opportunity for users
-to indirectly share information with friends, family, and peers via a profile
-containing personal information, status updates, and pictures.  Most social
-network structures rely on hosted systems, where they become the keepers of
-user data, which creates privacy and trust concerns.  Private overlays can
-remove this third party, making users the only owner of their data.  For this
-model, we propose that each user's profile be represented by a private overlay
-consisting of their friends.  The overlay should include a secured DHT, where
-only all writes are signed to uniquely identify the creator and may only be
-removed by the owner of the overlay.  In addition to bootstrapping the private
-overlays, the public overlay would be used as a directory for users to find and
-befriend each other.  For fault tolerance and scalability, each user provides a
-copy of their profile locally, which will be distributed amongst the private
-overlay in a read-only DHT, therefore, allowing the user's profile to be
-visible whether they are offline or online.  Each user's social network would
-than consist of the accumulation of the individual private overlays and the
-public overlay.
-
-\subsubsection{P2P VPNs}
-
-Private overlays enable truly decentralized, P2P VPNs.  The most common type of
-VPNs are centralized VPNs like OpenVPN, which requires that a centralized set
-of resources handle session initialization and communication.  Another approach
-taken by Hamachi and many others is to maintain a central server for session
-initialization but allow communication to occur directly between peers and
-providing a central relay when NAT traversal fails.  SocialVPN~\cite{socialvpn}
-relies on a dedicated bootstrap overlay provided by University of Florida.
-Using the techniques described in this paper, SocialVPN could be extended so
-that it can be bootstrapped into private systems without additional user
-configuration.
-
-\subsubsection{Multicast}
-
-The topic of secure multicast has been a focus of much research.  Using an
-approach similar to CAN~\cite{can_multicast}, a virtual private overlay forms a
-ring where all nodes are members of the multicast group with the additional
-feature that you can trust that your audience is limited to those in the
-overlay.  The main advantage of such multicasting technologies would be for
-wide-area, distributed multicast as described in~\cite{from_peer}.  Examples of
-such services include light weight multicast DNS / DNS-SD (service discovery),
-as well as audio and video streaming.
-
-\subsection{Bootstrapping P2P Systems}
+\subsection{Current Bootstrap Solutions}
 
 As described in the introduction, the simple case of bootstrapping is limited
 to one peer attempting to find an active peer in the overlay in order for
@@ -342,30 +275,26 @@ a normal fashion, so it may be banned by tracker hosts.
 Research has shown that peers can use the locality properties of recent IP
 addresses in a large-scale P2P system to make intelligent guesses about other
 peers in the P2P system using an approach called random
-probing~\cite{bootstrapping_p2p, locality_aware}.  The results show for
-networks in the order of tens of thousands that a peer can find an active peer
-node within as few as 100 attempts and as many as 2,000 guesses.  The
-application of this approach to small, ad hoc groups is challenging.  Peers
-behind NATs would most likely be unable to receive probe attempts , further
-more, if peers are widely distributed and the system small, this approach may
-have to query the majority of the IP address range to find a peer.  The results
-were not tested in real systems, but instead using overlay traces.
+probing~\cite{bootstrapping_p2p, locality_aware}.  The results show in a
+network of tens to hundreds of thousands, a bootstrapping peer can find an
+active peer in 100 guesses to 2,000 guesses, depending on the overlay.  The
+approach does not really apply well to small-scale systems, especially when
+peers are constrained by NATs and firewalls.
 
 Rather than distribute an IP address, which points explicitly to some location
 in the Internet, a small P2P network can apply a name abstraction around one
-peer in the overlay using Dynamic DNS~\cite{bootstrapping_ddns}.  In this
-approach, peers share a common DNS entry, providing an abstracted mechanism for
-labeling the bootstrap peer.  When the peers detect that the IP directed to by
-the DNS entry is offline, they replace it with their own.  The application of
-this approach to small, ad hoc groups is actually quite nice, as the service
-could be distributed across multiple Dynamic DNS registrations.  The
-significant drawback to the approach is that the dynamic DNS server could be
-attacked, since the login information must be shared amongst all peers in the
-overlay.  Also the approach requires that at least one peer be publicly
-addressable and know that it is, if a non-publicly addressable peer updates the
-cache, it could delay or permanently prevent peers from creating a P2P system.
-The results were simulation based and did not determine how well a dynamic DNS
-handles rapid changing of name to IP mappings.
+peer in the overlay using Dynamic DNS~\cite{bootstrapping_ddns}.  Peers share a
+DNS entry, which points to a bootstrap server.  When the peers detect that the
+bootstrap server is offline, at random time intervals they will update the DNS
+entry with their own.  The application of this approach to small, ad hoc groups
+is actually quite nice, as the service could be distributed across multiple
+Dynamic DNS registrations.  Though a sharing a DNS entry requires trust in the
+system, making it easiy for malicious peers to inhibit system bootstrapping.
+Also the approach requires that at least one peer be publicly addressable and
+know that it is, if a non-publicly addressable peer updates the cache, it could
+delay or permanently prevent peers from creating a P2P system.  The results
+were simulation based and did not determine how well a dynamic DNS handles
+rapid changing of name to IP mappings.
 
 IP supports multicasting to groups interested in a common service.  In the case
 of bootstrapping a P2P system~\cite{pastry, locality_aware}, all peers would be
@@ -391,7 +320,7 @@ relaying.
 As of 2010, the majority of the Internet is connected via Internet Protocol
 (IP) version 4.  This protocol has a quickly approached limit of addresses
 available,  only $2^{32}$ (approximately 4 billion).  With the Earth's
-population at over 8 billion and each individual potentially having multiple
+population at over 6.8 billion and each individual potentially having multiple
 devices with Internet connectivity, the IPv4 limitation is becoming more and
 more apparent.  Addressing this issue are two approaches:  1) the use of NATs
 to enable many machines and devices to share a single IP address but preventing
@@ -455,26 +384,27 @@ are behind NATs.
 \subsection{Reflection}
 \label{reflection}
 
-Without a reflection, two peers on different networks with non-public addresses
-would not have routable addresses with which to communicate with each other.
-For constrained resources, the two solutions for traversal are hole punching
-and relaying.  In hole punching two peers attempt to form a direct connection
-by tricking the NATs to believe that the internal peer has already established
-communication with the external peer.  This works, because both peers do it
-simultaneously.
+Reflection provides a peer with a global identifier, which can be shared with
+other peers so that it can receive incoming messages.  Without a reflection,
+peers on different networks with non-public addresses would not have routable
+addresses with which to communicate with each other.  Reflection need not be
+limited to just IP.  For example, when a peer joins a service, such as a chat
+application or a P2P system, the overlay provides a unique identifier, which
+also serves as a form of reflection.
 
-In IP communication, the simplest method for NAT traversal is the multiplexing
-of a single UDP socket, IP address and port combination.  This behavior can be
-supported through either local configuration or remote assistance.  The local
-configuration approach relies on the local router supporting either
-UPNP~\cite{upnp} or port forwarding / tracking.  In many cases, UPNP is not
-enabled by default and in most commercial venues it will rarely be enabled.
-Port forwarding / tracking require a more detailed configuration of a router,
-outside the comfort range of many individuals and is not uniform across
-routers.  A peer using UPNP needs no further services, as UPNP enables a peer
-to set and obtain both public IP address and port mappings.  Port forwarding
-and tracking mechanisms still require that the user obtains and inputs into the
-application their public IP address or use in band assistance described next.
+In IP communication, reflection can enable NAT traversal.  the simplest method
+for NAT traversal is the multiplexing of a single UDP socket, IP address and
+port combination.  This behavior can be supported through either local
+configuration or remote assistance.  The local configuration approach relies on
+the local router supporting either UPNP~\cite{upnp} or port forwarding /
+tracking.  In many cases, UPNP is not enabled by default and in most commercial
+venues it will rarely be enabled.  Port forwarding / tracking require a more
+detailed configuration of a router, outside the comfort range of many
+individuals and is not uniform across routers.  A peer using UPNP needs no
+further services, as UPNP enables a peer to set and obtain both public IP
+address and port mappings.  Port forwarding and tracking mechanisms still
+require that the user obtains and inputs into the application their public IP
+address or use in band assistance described next.
 
 In the remotely assisted scenario, a peer first sends a message to a reflection
 provider, perhaps using STUN~\cite{stun_rfc}.  The response from the provider
@@ -485,9 +415,7 @@ peers communicate simultaneously all types of cone NATs can be traversed.  So
 long as one peer is behind a cone NAT, NAT traversal using this mechanism is
 possible.  The situation becomes complicated when both peers are behind
 symmetric NATs or when either one of them have a firewall prevent UDP
-communication.  While there exist methods to traversing both symmetric and TCP
-only NATs, they are significantly more complicated than the reflection approach
-provided by STUN.
+communication.  
 
 Peers behind symmetric NATs cannot easily communicate with each other, since
 there is no relation between remote hosts and ports and local ports.  Further
@@ -499,62 +427,43 @@ port selection.
 Unlike UDP, TCP NAT traversal is complicated by the state associated with TCP.
 In many systems, the socket API can be used to enable a peer to both listen for
 incoming connections and form outgoing connections using the same local
-addressing information.  This is allowed in the TCP specification, but this is
-a non-traditional method of employing the sockets API.  According
-to~\cite{ice-tcp}, this method works for various types of systems though the
-success rate on NATs is quite low, 40\%.  Other mechanisms rely on out of band
-communication, \cite{pvc}, or use of complicated predictive
-models~\cite{tcp-hole-punching}.
-
-These NAT traversal services only deal with a small portion of the bootstrap
-problem, reflection.  That is, peers are able to obtain a public address for
-receiving incoming connections.  They provide no means for users to exchange
-addresses with each other or perform simultaneous open.  To address this issue
-many systems incorporate these NAT traversal libraries and use intermediaries
-to exchange addresses.
-
-An example application that uses reflection, rendezvous, and relay services is
-is Teredo~\cite{teredo}.  Teredo offers globally identifiable IPv6 addresses to
-everyone.  The IPv6 address is constructed in a way to maps to a specific
-Teredo gateway, client pair.  When two peers using Teredo attempt to connect
-with each other after exchanging their IPv6 addresses out of band, the Teredo
-servers exchange the clients IPv4 information obtained using a STUN-like
-procedure.  The approach is heavily centralized and if the gateway peer goes
-offline or becomes saturated, the peers outgoing and incoming requests may be
-ignored.  
+addressing information.  According to~\cite{ice-tcp}, this method works for
+various types of systems though the success rate on NATs is low, 40\%.  Other
+mechanisms rely on out of band communication~\cite{pvc}, or use of complicated
+predictive models~\cite{tcp-hole-punching}.
 
 \subsection{Relaying}
 \label{relay}
 
-In an overlay, there exist two forms of relaying:  one to exchange connection
-information and to assist in simultaneous connections and the other would be
-similar to the TURN style, arbitrary data router.  Without a relaying mechanism
-peers behind some of the various types of cone NATs would be unable to
-establish direct connections between each other.  In the other case, there
-exists no silver bullet, guaranteed method, for dealing with NAT hole punching.
-Relays are the only guaranteed solution for NAT traversal, though it does not
-come cheaply.  Relaying requires an entity willing to provide the service and
-traffic that can handle the potential delay and bandwidth limitations.  In
-general, TURN is not very scalable as it requires a dedicated service provider.
-The designers of Teredo found relaying unattractive enough that it was not
-included in the Teredo package and thus peers behind severely constrained NATs
-are unable to communicate with each other.
+NAT traversal services only deal with a small portion of the bootstrap problem,
+reflection.  That is, peers are able to obtain a public address for receiving
+incoming connections.  They provide no means for users to exchange addresses
+with each other or perform simultaneous open to traverse restrictive NATs.  To
+address this issue many systems incorporate these NAT traversal libraries and
+use intermediaries to exchange addresses, this is one form of relaying.
+Another form of relaying exists when two peers are unable to form direct IP
+connections with each other.
 
-A decentralized mechanism for relaying is ideal.  In this case, a peer has an
-identifier that is loosely coupled with their network identity and even less to
-the overlay provider.  When a remote peers sends a message to the identifier,
-the overlay should translate the identifier into network level addresses and
-forward it to the destination.  This layer of decoupling could enable a
-scalable approach to relaying.  
+The most common method for relaying in IP is the use of TURN~\cite{turn}, or
+Traversal Using Relay NAT.  A peer using TURN obtains a public IP address and
+port that can be used as a forwarding address to it.  When a remote peer sends
+to this address, the TURN server will forward the response to the peer who has
+been allocated that mapping.  The lack of abstraction requires a dedicated TURN
+service provider, making its application in small-scale systems complicated.  
 
-Relaying must, also, be a somewhat reliable enabling peers to exchange various
-sized, arbitrary messages.  In this case, somewhat reliable means that the
-service provides at a minimum behavior like UDP, which has been described as an
-unreliable protocol.  When a peer sends a message, it should expect the remote
-peer should receive it in a reasonable amount of time or not at all.  If the
-sending peer does not receive a response within a reasonable amount of time,
-follow up requests can be sent until successful or it is deemed the remote
-party is no longer online.  
+Using existing overlays, where a peer may have an abstracted identifier that
+does not uniquely connect it to a specific server could be used to enable
+decentralized relay implementations.  When a remote peers sends a message to
+the identifier, the overlay should translate the identifier into network level
+addresses and forward it to the destination.  This layer of decoupling could
+enable a scalable approach to relaying.  
+
+Relaying must, also, have reliability features like UDP enabling peers to
+exchange various sized, arbitrary messages.  When a peer sends a message, it
+should expect the remote peer should receive it in a reasonable amount of time
+or not at all.  If the sending peer does not receive a response within a
+reasonable amount of time, follow up requests can be sent until successful or
+it is deemed the remote party is no longer online.  
 
 Finally, the service should be asynchronous or event driven.  The previous
 requirements would allow peers to relay through a message board or even by
@@ -567,17 +476,18 @@ service or spam attacks.
 
 \subsection{Rendezvous}
 
-Rendezvous enables peers to have a method for having a predetermined mechanism
-to discover each other.  In the simplest case, a peer could randomly probe
-other peers on the Internet until it finds a matching peer.  This approach is
-unreasonable if overlay is small and even more so if the peers are behind NATs,
-as the NATs may very well ignore the requests even if a peer behind the NAT
-is actively looking for that overlay as well.
+A rendezvous service should allow peers to discover peers interested in the
+same service and provide a global identifier to contact that peer.  In the
+simplest case, a peer could randomly probe other peers on the Internet until it
+finds a matching peer.  This approach is unreasonable if overlay is small and
+even more so if the peers are behind NATs, as the NATs may very well ignore the
+requests even if a peer behind the NAT is actively looking for that overlay as
+well.
 
 Given an overlay, the most straightforward mechanism for rendezvousing is the
 use of a broadcast query to determine if any other peers are using the same
 service.  In small enough overlays, this is a perfectly reasonable approach,
-Though in large scale systems such as Gnutella, the approach would never work.
+though in large scale systems such as Gnutella, the approach is not scalable.
 
 There is not one unified method to consolidate rendezvous as doing such would
 severely limit its capabilities.  Programming rendezvous using the unique
@@ -587,22 +497,6 @@ quickly.  For example, in the case of a DHT, peers can use a single DHT key
 to store multiple values, all of which would be addresses used to communicate
 with peers in the overlay.  Alternatively, in a system like BitTorrent, peers
 could use the same tracker and become ``seeds'' to the same virtual file.
-
-\subsection{Overlap}
-
-A single public overlay does not need to provide all the components for
-bootstrapping the private overlay.  For example, peers could use the the
-Limewire / Gnutella Kademlia DHT, Mojito, as a means to register for
-rendezvous.  The peer could leave their globally unique XMPP identity in the
-DHT.  Another peer interested in the same service would discover this identity
-and then could become friends through XMPP, an automatable process.  Once the
-friendship has been formed, they can use XMPP as a means for relaying.
-
-Additionally, a single reflection does not need to be limited to obtain
-routable IP addresses.  For example, when a peer communicates through a
-relay provided by a service, it needs a global address for peers to direct
-messages towards it.  A reflection service in this regards could be the
-overlays provision of a resource identifier.
 
 \begin{table*}[h!t!]
 \centering
@@ -722,11 +616,12 @@ Like Pastry, Brunet supports recursive routing and even supports relays called
 tunnels~\cite{hpdc08_0}.
 \\ \hline
 \end{tabular}
-\caption{}
+\caption{Public and Research Overlays}
 \label{tab:overlays}
 \end{table*}
 
 \section{Implementations}
+\label{implementation}
 
 Table~\ref{tab:overlays} reviews various overlays, the majority of which are
 high availability, public, free-to-join overlays, though some research only
@@ -740,9 +635,10 @@ distributed overlay.
 Our implementation makes heavy use of the transports incorporated into
 Brunet~\cite{brunet}.  The key distinguishing feature of this library is the
 abstraction of sending over a communication link as it supports primitives
-similar to ``send'' and ``receive''.  In the next sections, we will describe
-how we extended Brunet to be self-bootstrapping as well as extensions to enable
-bootstrapping from XMPP.
+similar to ``send'' and ``receive'' that enables the ability to create P2P
+communication channels over a variety of transports.  In the next sections, we
+will describe how we extended Brunet to be self-bootstrapping as well as
+extensions to enable bootstrapping from XMPP.
 
 Our application of structured overlays as the basis private overlays is unique
 in that most publications regarding structured overlays focus on their ability
@@ -752,14 +648,14 @@ Dynamo~\cite{dynamo} using a ``couple of hundred of nodes'' or less.  Facebook
 provides an inbox search system using Cassandra~\cite{cassandra} running on
 ``600+ cores''.  Structured overlays simplify organization of an overlay and
 provide each member a unique identifier abstracted from the underlying network.
-Further more, as mentioned in the cited works, they provide high availability
-and autonomic features that can handle churn well.  Further more, when used in
-small networks, most structured overlays act as $O(1)$ systems, explicitly
-all-to-all though in some cases with relaying, this includes Brunet and Pastry.
-Brunet explicitly supports all-to-all though in some cases may require
-constrained peers to route through relays.  This can further be ensured by
-setting the amount of near connections for the infrastructures, which in Brunet
-is configurable at run time.
+As mentioned in the cited works, they provide high availability and autonomic
+features that can handle churn well.  When used in small networks, most
+structured overlays act as $O(1)$ systems, explicitly all-to-all connectivity
+though in some cases with relaying, this includes Brunet and Pastry.  Brunet
+explicitly supports all-to-all though in some cases may require constrained
+peers to route through relays.  This can further be ensured by setting the
+amount of near connections for the infrastructures, which in Brunet is
+configurable at run time.
 
 The XMPP library we used is called Jabber-Net.  Each connection between peers
 is uniquely identified by employing socket like concepts, i.e., a pair of
@@ -772,41 +668,43 @@ again one identifier for the local peer and one for the remote.
 \subsection{Bootstrapping Private Overlays Using Brunet}
 \label{brunet_bootstrapping}
 
-Prior to our work, Bruent bootstrapped using a recently online cache of peers
+Prior to our work, Brunet bootstrapped using a recently online cache of peers
 and IP multicast.  We have implemented Brunet to support STUN, such that, with
 every connection Brunet makes, peers inform each other of their view of the
-remote peers network state, a form of passive \textbf{reflection}.
-Furthermore, peers route through the overlay their intentions to connect with
-each other through ``ConnectToMe'' messages.  Thus when a peer desires a
-connection to another, both peers simultaneously attempt to connect to each
-other, dealing with the issue of more restrictive cone NATs and the case when
-the peer is behind a non-traversable NAT.  To address the situation where two
-peers are behind symmetric NATs or one does not allow UDP, Brunet has been
-enhanced to support ``Tunnels''~\cite{hpdc08_0}, where peers route to each
-other through their other connections.
+remote peers network state, a form of passive \textbf{reflection}.  Peers also
+generate a unique 160-bit node identifier that can be used in the overlay as a
+directly receive packets regardless of the underlay conditions.
 
-In Brunet, we chose to use the DHT for \textbf{rendezvous}, as this provides a
-scalable and self-maintaining mechanism for maintaining a bootstrap. All peers
-interested in a specific service or private overlay obtain a DHT key based upon
-a hashing of the service' or private overlay's name.  Peers can then query this
-entry in the DHT to obtain a list of peers in the private overlay.  Note, that
-Brunet's DHT implementation supports a single key may have many values.  Since
+In a single overlay, Brunet supports \textbf{relaying} either through the
+overlay or pseudo direct connections called ``Tunnels''~\cite{hpdc08_0}, where
+peers route to each other through neighboring connections.  The relaying in
+this context is used either to maintain a necessary overlay connection or to
+exchange intentions to connect with each other through ``ConnectToMe''
+messages.  Thus when a peer desires a connection to another, both peers
+simultaneously attempt to connect to each other, dealing with the issue of more
+restrictive cone NATs and the case when the peer is behind a non-traversable
+NAT.  
+
+To support \textbf{relaying} in a private overlay, we further extended Brunet's
+transport library to support treating an existing overlay as a medium for
+point-to-point communication, we call this a ``Subring'' transport.  When the
+private overlay transmits data across the public overlay, the private overlay
+packet is encapsulated in a packet that ensures it will be delivered to the
+correct private, and then encapsulated into a greedy routing packet.  At which
+point, the packet is sent to the remote peer through the public overlay.  In
+order to instruct peers to establish ``Subring'' links, they exchange an
+identifier of the form ``brunet://P2P\_ID''.
+
+Peers store their ``Subring'' identifiers into the DHT for \textbf{rendezvous}.
+The DHT provides a scalable and self-maintaining mechanism for maintaining a
+bootstrap, so long as the DHT supports multiple values at the same key, as
+Brunet does.  The key used for the DHT rendezvous is a hash of the services
+name and its version number, what we call a namespace.  Peers can then query
+this entry in the DHT to obtain a list of peers in the private overlay.  Since
 DHTs are soft state, or lease systems, where data is released after a certain
-period of time.  Peers must actively maintain their DHT entry.  The DHT is
-a lease or soft state system, where (key, value) pairs are inserted into it
-with a time to live, after which, the key is removed from the DHT.  Thus a
-peer who is online can actively maintain their DHT entry and when the peer goes
-offline, it need not explicitly remove the entry.
-
-For \textbf{relaying}, we further extended Brunet's transport library to
-support treating an existing overlay as a medium for point-to-point
-communication, we call this a ``Subring'' transport.  Thus in the DHT, peers
-store their public overlay address.  When the private overlay transmits data
-across the public overlay, it sets the protocol type to match a unique value
-for the specific overlay and then sends the packet through the greedy routing
-mechanisms on the public overlay to the remote peers public overlay address.
-In order to instruct peers to establish ``Subring'' links, they exchange an
-identifier that instructs them to do so of the form ``brunet://P2P\_ID:PORT''.
+period of time, thus an online peer must actively maintain its DHT entry.  In
+the case that peer goes offline, the DHT will automatically remove the value
+after its lease has expired.
 
 The final challenge faced was the application of Brunet's reflection service
 for the private overlay.  There were two directions we could have gone.  The
@@ -825,6 +723,15 @@ socket transport layers.  When peers exchange identifiers, instead of
 transmitting a simple identifier like ``udp://192.168.1.1:15222'', the
 ``Pathing'' library extends it to ``udp://192.168.1.1:15222/path'', where each
 path will signify a unique overlay.
+
+The approach of ``Subring'' and ``Pathing'' enabled the reuse of the core
+components of Brunet.  Using ``Subring'' enables peers to form bootstrap
+connections to then exchange ``ConnectToMe'' messages.  If the direct
+connections failed, then the ``Subring'' connections could be used as permanent
+connections.  The use of ``Pathing'' meant reuse of existing NAT traversal
+techniques and limited the amount of system resources required to run multiple
+overlays.  In terms of total lines of code, these abstractions enabled a
+recursive overlay bootstrapping in only 700 lines of code.
 
 \subsection{Bootstrapping Private Overlays Using XMPP}
 \label{xmpp_bootstrapping}
@@ -852,39 +759,47 @@ connection or subscription, they are informed through a ``Presence''
 notification that the peer has come online, this include the full user
 identifier.
 
-The \textbf{reflection} component in XMPP is available only to those servers
-that support a feature called ``Jingle''~\cite{jingle}.  ``Jingle'' uses ``IQ''
-to determine available STUN and TURN servers.  Fortunately, these services are
-provided free of charge through GoogleTalk.  In Brunet, we extended the UDP
-transport to support querying STUN servers so that it can obtain an address
-mapping and keep it open.  STUNs protocol sets the first two bits to 0 in all
-messages, thus we used that and the STUN cookie to distinguish it from other
-messages.
-
-\textbf{Rendezvous} can be approached in two methods.  We could simply
-broadcast a discovery ``IQ'' to all our peers looking for a remote service,
-though this may be viewed by the server as some sort of attack.  Alternatively,
-a resource identifier could be used to set apart P2P peers from chat peers.
-The problem with this approach is what if two P2P applications use the same
-base identifier.  Our solution combines the two approaches, so that during the
-Presence notification, a peer learns about potential P2P peers.  Then when the
-peer is actively querying for remote addresses, it will also inform the queried
-peer about the type of P2P service requested.  If the peer's having matching
-P2P services, the peer will return a list of addresses otherwise it returns an
-empty list.
+The first form of \textbf{reflection} in XMPP is the unique client identifier.
+Another is an IP reflection service available from some XMPP service providers
+called ``Jingle''~\cite{jingle}.  ``Jingle'' uses ``IQ'' to determine available
+STUN and TURN servers.  Fortunately, these services are provided free of charge
+through GoogleTalk.  In Brunet, we extended the UDP transport to support
+querying STUN servers so that it can obtain an address mapping and keep it
+open.  STUNs protocol sets the first two bits to 0 in all messages, thus we
+used that and the STUN cookie to distinguish it from other messages.
 
 In order to support the situation, where two peers are unable to communicate
 through the exchanged addresses, we have extended XMPP ``IQ'' as a transport to
-support \textbf{relaying}.  In the exchanged addresses from the rendezvous phase,
-one of the addresses is of the form ``xmpp://username@domain/resource''.  Once
-a peer has formed a connection through XMPP, they are then able to attempt
-simultaneous connection attempts, further increasing the likelihood of a
+support \textbf{relaying}.  Once a peer has formed a connection through XMPP,
+they are then able to attempt simultaneous connection attempts, in the same
+fashion as the ``Subring'' transport, further increasing the likelihood of a
 connection.  If that does not succeed, the peers can still relay through XMPP.
 This approach also has the benefit that, if a XMPP server does not support
 ``Jingle'', the two peers can still form links with each other.  Since Brunet
-supports reflection, eventually, if one of the peers in the system has a
-public address, it will automatically assist the other peers into forming
+internaly supports IP reflection, eventually, if one of the peers in the system
+has a public address, it will automatically assist the other peers into forming
 direct links with each other.
+
+\textbf{Rendezvous} uses a two step approach.  First peers advertise their use
+of private overlay in the resource identifier.  The name is hashed to ensure
+that the users complete identifier does not extend past 1,023 bytes, the
+maximum length for these identifiers.  In addition, a cryptographyically
+generated random number is appended to the resource identifier to distinguish
+between multiple instances of the users application in the same private
+overlay.  Once a peer receives a presence notification from a remote peer and
+the base components match, that is the hash of the service, the peer adds it to
+a list of known online peers.  If the peer lacks connections, the system
+broadcasts to that list a request for addresses.  The peers respond with a list
+of addresses including UDP, TCP, and XMPP addresses, concluding rendezvous.
+
+Due to the abstractions employed by the transporst library, these features
+required only an additional 700 lines of code to Brunet and no modification to
+the core system.  Ideally, peers would not need to create XMPP connections with
+each other, if they are on a public address, the rendezvous phase alone will
+suffice.  In the case that they are not on public addresses, peers can first
+obtain their public address through STUN, then form an XMPP connection with
+each other, and finally perform simultaneous connection attempts.  If NAT
+traversal fails, the peers can continue routing through the XMPP connection.
 
 \section{Evaluating Overlay Bootstrapping}
 \label{evaluations}
@@ -899,78 +814,87 @@ overheads should be expected in using Brunet and XMPP to bootstrap an overlay.
 The experiments in no means are rigorous as that would become overly focused on
 overheads of Brunet and XMPP, instead this paper is primarily interested in
 forming small-scale overlays.  The experiment represents 5 peers desiring
-all-to-all direct connectivity a feature transparently available to them if
+all-to-all direct connectivity, a feature transparently available to them if
 they bootstrap into a private Brunet overlay.
 
-This experiment relied on a public Brunet overlay consisting of over 600 nodes
-running on PlanetLab.  PlanetLab~\cite{planetlab} is a consortium of research
+The public Brunet overlay used in this experiment consisted of over 600 nodes
+and ran on PlanetLab.  PlanetLab~\cite{planetlab} is a consortium of research
 institutes sharing hundreds of globally distributed network and computing
-resources.  PlanetLab provides a very interesting environment as there is
-constant unexpected churn of machines due to the extreme load placed on the
-resources and unscheduled system restarts.  Complementary to simulation,
-PlanetLab gives us a glimpse of what to expect from the P2P software stack when
-used in an actual environment subject to higher variance due to resource
-contention and churn.
+resources.  GoogleTalk provided the XMPP overlay used in this experiment.
+Though this experiment does not take into advantage the features of the XMPP
+Federation, this aspect is presented in more detail in the next section
+reviewing experiences deploying overlays using XMPP.
 
-GoogleTalk provided the XMPP overlay used in this experiment.  Though this
-experiment does not take into advantage the features of the XMPP Federation,
-this aspect is presented in more detail in the next section reviewing
-experiences deploying overlays using XMPP.
+In the experiment, 5 P2P nodes were started simultaneously, while measuring the
+time spent for reflection, rendezvous, reflection, and connection.  The results
+are presented in Table~\ref{tab:results}.  For XMPP, these are translated as
+follows:  reflection measures the time to obtain IP addresses from the STUN
+server, rendezvous is the time to receive a presence notification, relaying is
+the time to receive a message across XMPP, and connected is once all nodes in
+the private overlay has all-to-all connectivity.  For Brunet, these are
+translated as follows:  reflection measures the time to connect to the public
+overlay, rendezvous is the time to query the DHT, relaying is the average time
+to send a message across the overlay, and connected is the time until the
+private overlay has all-to-all connectivity.  The tests were run using 5
+virtual machines on the same host, though each had its own NAT and thus were
+unable to communicate directly without assistance.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{|c||c|c|c|c|}
+\hline & Reflection & Rendezvous & Relaying & Connected \\ \hline \hline
+XMPP & .04 & & .243 & 11.5 \\ \hline
+Brunet & & & & \\ \hline
+\end{tabular}
+\caption{Time in seconds for various private overlay operations}
+\label{tab:overlays}
+\end{table}
 
 \subsection{Deployment Experiences}
 
-In this section, we share some our experiences in deploying XMPP overlays.
 Recently, Facebook announced that they would be supporting XMPP as a means to
 connect into Facebook chat.  This was rather exciting and further motivated
 this work, as Facebook has over 400 million active users, which would have made
-there XMPP overlay, potentially, the largest free-to-join overlay.
-Unfortunately, experiments established that Facebook does not actually employ a
-traditional XMPP setup.  The Facebook XMPP setup merely provides a proxy into
-their chat network, preventing features like arbitrary IQs and other forms of
-out-of-band messages to be exchanged between peers.  That alone was not the
-nail in the coffin, as messages could have still been exchanged encoding the
-binary data as text messages between peers.  The nail in the coffin was that
-translation performed on peers identifiers.  For example, a user would generate
-a XMPP identifier of the form ``username@chat.facebook.com/resource'', but to
-its peers, it would be presented as ``uSOME\_NUMBER@chat.facebook.com''.  Thus
-peers would then need to use another service just to obtain the identity of the
-peer and would have no means to tell what the resource identifier is.  The only
-approach to bootstrapping would be to broadcast in-band messages to all peers,
-the problem with this is that many peers may actually be using the chat system
-for chatting.  These peers would receive spam from an overlay bootstrap, which
-they may not be very receptive to.  Finally, Facebook is not a part of the XMPP
-Federation, thus peers from GoogleTalk cannot chat with peers from Facebook.
-Given that there was no way to exchange arbitrary information and the
-rendezvous service was crippled, at this point in time, it appears there is no
-way to bootstrap an overlay using Facebook.
+their XMPP overlay, potentially, the largest free-to-join overlay.
+Unfortunately, Facebook does not employ a traditional XMPP setup, instead it
+provides a proxy into their chat network, preventing features like arbitrary
+IQs and other forms of out-of-band messages to be exchanged between peers.
+User identifiers are also translated, so a peer cannot obtain a remote peers
+real identifier.  Thus there exists no out of band mechanism for rendezvous.
+Peers could potentially send rendezvous messages through the in band XMPP
+messaging, but this may be viewed by most recipients as spam as it would
+arrive as normal chat messages.  The lesson learned was that XMPP servers
+not associated with the Federation will not necessarily support features
+necessary to bootstrap.
 
 During initial tests in verifying the workings of the XMPP code base, we
 bootstrapped a  private Brunet overlay on PlanetLab through various XMPP
-service providers.  Interestingly, GoogleTalk servers seem to ignore machines
-on PlanetLab.  Using another provider, the service appeared to crash after 257
-instances of the same account were online.  Unfortunately, the provider had no
-contact information available, so we were unable to determine if our test
-caused the crash.  There was one server that appeared have no trouble hosting
-600 concurrent instances of a single XMPP user, ``jabber.rootbash.com''.  The
-nodes were able to rendezvous and relay through \textit{rootbash} and form a
-connected P2P system.  The setup did not require reflection, as PlanetLab
-resources all have public IP addresses.
+service providers.  We discovered that some servers were ignoring clients on
+PlanetLab.  Another server crashed after 257 concurrent instances of the same
+account logged in.  Unfortunately, the provider had no contact information
+available, so we were unable to determine if our test caused the crash.  Though
+there did exist some servers that had no trouble hosting over 600 concurrent
+instances running on PlanetLab.
 
 Once the system was running on PlanetLab, more tests were performed to
 determine the ability to bootstrap across the XMPP Federation.  We formed
 friendships, or subscriptions, between users across a few different XMPP
-service providers.  In the most evaluated case, a single peer on GoogleTalk and
-the PlanetLab system using \textit{rootbash}, the GoogleTalk peer would not
-always receive presence notifications for all peers online, though always would
-receive some.  When a peer began the relaying mechanism, itr would broadcast to
-every peer, it rendezvoused or discovered.  When performing this between
-GoogleTalk and \textit{rootbash}, the GoogleTalk peer would not receive a
-response.  Though in reducing the broadcast to a random selection of 10 peers,
-every 10 seconds until the GoogleTalk peer was connected, the peer received
-responses.  The behavior indicates that the XMPP servers may have been
-filtering to prevent denial of service attacks.  One last note, when
-bootstrapping a peer from GoogleTalk into the \textit{rootbash} system, it
-always took 1 minute for the node to become fully connected to the private
+service providers.  In the most evaluated case, a single peer on GoogleTalk
+along with 600 peers on PlanetLab system using \textit{jabber.rootbash.com},
+the GoogleTalk peer would not always receive presence notifications for all
+peers online, though always would receive some.  When a peer began the relaying
+mechanism, it would broadcast to every peer from whom it received a presence
+notification.  When performing this between GoogleTalk and \textit{rootbash},
+the GoogleTalk peer would not receive a response.  Though in reducing the
+broadcast to a random selection of 10 peers, every 10 seconds until the
+GoogleTalk peer was connected, the peer received responses.  The behavior
+indicates that the XMPP servers may have been filtering to prevent denial of
+service attacks.
+
+Peers on the same XMPP server seem to be connected very quickly, though peers
+on different services can take significantly longer.  For example, when
+bootstrapping a single peer from GoogleTalk into the \textit{rootbash} system,
+it always took 1 minute for the node to become fully connected to the private
 overlay.  When the peer used \textit{rootbash}, the peer always connected
 within 30 seconds.  It seems as if the communication between XMPP servers was
 being delayed for some reason.  The same behavior was not experienced, when
@@ -979,25 +903,31 @@ chatting between the two peers.
 \section{Conclusion}
 \label{conclusions}
 
-In this paper, we have established the requirements for bootstrapping small-scale
-P2P overlays, reflection, rendezvous, and relaying.  Reflection is required, so
-that peers behind NATs and firewalls can obtain a public address to share with
-remote peers.  Rendezvous is a common problem, even for large-scale systems,
+In this paper, we have established the requirements for bootstrapping
+small-scale P2P overlays, reflection, relaying, and rendezvous.  Reflection is
+required, so that peers behind NATs and firewalls can obtain public addresses
+to share with remote peers.  Relaying provides a means for peers to coordinate
+simultaneous connection attempts and a fall back in the case that NAT traversal
+attempts fail.  Rendezvous is a common problem, even for large-scale systems,
 peers must have a mechanism to find other peers connecting to are are in the
-same overlay.  Finally, without relaying, peers behind NATs would be unable to
-exchange with each other their public addresses and perform NAT hole punching.
+same overlay.  
 
-As we surveyed existing overlays, we found two systems that can easily satisfy
-the requirements, XMPP and Brunet.  While Brunet can efficiently provide P2P
-services, it is an academic setup, XMPP, on the other hand, is production ready
-and distributed across many different providers, each offering
-interoperability.  The only issue with using XMPP alone is that peers must
-already be friends in order to rendezvous.  For future work, we will
-investigate how peers can leverage existing DHT deployments, such as Kad or
-Mojito, for rendezvous, form friendships automatically in XMPP, and continue
-the bootstrap process using XMPP.  Our implementation successfully deals with
-the bootstrapping problem for small-scale overlays using decentralized
-technique.
+We extended Brunet to support bootstrapping from another Brunet overlay as well
+as XMPP.  XMPP was chosen as readily supported the key features required for
+bootstrapping small-scale P2P overlays.  The Brunet solution offers interesting
+insights, such as the ability to multiplex a single socket or transport for
+multiple overlays, so that a peer does not need to actively maintain multiple
+NAT mappings.  XMPP provides a reliable, production ready, mechanism of
+bootstrapping overlays as the service is hosted by a distributed set of
+providers, each offering interoperability.  Our prototype clearly identifies
+methods for reflection, relaying, and rendezvous and can assist in discovering
+methods for doing so in similar systems.
+
+For future work, we will investigate how peers can leverage existing DHT
+deployments, such as Kad or Mojito, for rendezvous, form friendships
+automatically in XMPP, and continue the bootstrap process using XMPP.  This
+would enable the XMPP solution to be extended to bootstrap overlays that are
+not based on social connections alone.
 
 %\section*{Acknowledgment}
 
