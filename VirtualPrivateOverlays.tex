@@ -7,35 +7,36 @@
 \usepackage{array}
 \usepackage{footnote}
 
-\setlength{\parskip}{0pt}
-\setlength{\parsep}{0pt}
-\setlength{\headsep}{0pt}
-\setlength{\topskip}{0pt}
-\setlength{\topmargin}{0pt}
-\setlength{\footskip}{0pt}
+%\setlength{\parskip}{0pt}
+%\setlength{\parsep}{0pt}
+%\setlength{\headsep}{0pt}
+%\setlength{\topskip}{0pt}
+%\setlength{\topmargin}{0pt}
+%\setlength{\footskip}{0pt}
 
-\setlength{\topsep}{2pt}
-\setlength{\partopsep}{0pt}
-\setlength{\itemsep}{0pt}
+%\setlength{\topsep}{2pt}
+%\setlength{\partopsep}{0pt}
+%\setlength{\itemsep}{0pt}
 
-\setlength{\floatsep}{4pt}
-\setlength{\dblfloatsep}{4pt}
-\setlength{\textfloatsep}{4pt}
-\setlength{\dbltextfloatsep}{4pt}
-\setlength{\abovecaptionskip}{4pt}
-\setlength{\intextsep}{2pt}
+%\setlength{\floatsep}{4pt}
+%\setlength{\dblfloatsep}{4pt}
+%\setlength{\textfloatsep}{4pt}
+%\setlength{\dbltextfloatsep}{4pt}
+%\setlength{\abovecaptionskip}{4pt}
+%\setlength{\intextsep}{2pt}
 
 \widowpenalty=10000
 \clubpenalty=10000
 
-\begin{document} \title{Addressing the P2P Bootstrap Problem for Small Overlay
-Networks}
+\begin{document}
+
+\title{Addressing the P2P Bootstrap Problem for Small Overlay Networks}
 
 \author{
-%\IEEEauthorblockN{David Isaac Wolinsky, Pierre St. Juste, P. Oscar Boykin,
-%and Renato Figueiredo}
-%\IEEEauthorblockA{Advanced Computing Information Systems Lab\\
-%University of Florida}
+\IEEEauthorblockN{David Isaac Wolinsky, Pierre St. Juste, P. Oscar Boykin,
+and Renato Figueiredo}
+\IEEEauthorblockA{Advanced Computing Information Systems Lab\\
+University of Florida}
 }
 
 \maketitle
@@ -65,11 +66,10 @@ communication relaying to share public addresses and communicate when direct
 communication is not feasible; and rendezvous for discovering remote peers,
 when the overlay lacks stable membership.  After presenting a survey of various
 public overlays, we identify two overlays that match the requirements:  XMPP
-overlays, such as Google Talk and Live Journal Talk, and
-Symphony*\footnote{Symphony* is used to ensure anonymity.}, a structured
+overlays, such as Google Talk and Live Journal Talk, and Brunet, a structured
 overlay based upon Symphony.  We present qualitative experiences with
 prototypes that demonstrate the ability to bootstrap small-scale private
-structured overlays from public Symphony* or XMPP infrastructures.
+structured overlays from public Brunet or XMPP infrastructures.
 
 \end{abstract}
 
@@ -178,23 +178,23 @@ overlay can be used to transparently bootstrap a private overlay with minimal
 user interaction.
 
 The requirements are presented and verified in the context of two prototype
-implementations: a XMPP (Jabber)~\cite{xmpp} and Symphony*~\cite{brunet}.
+implementations: a XMPP (Jabber)~\cite{xmpp} and Brunet~\cite{brunet}.
 XMPP-based overlays are commonly used as chat portals, such as GoogleTalk and
 Facebook Chat.  XMPP also supports an overlay amongst servers forming through
 the XMPP Federation, which allows inter-domain communication amongst chat
 peers, so that users from various XMPP servers can communicate with each other.
-Symphony* provides generic P2P abstractions as well as an implementation of the
+Brunet provides generic P2P abstractions as well as an implementation of the
 Symphony structured overlay.  We present the architecture for these systems,
 the lessons learned in constructing and evaluating them, and provide an
 analysis of the latency to establish peer connectivity in a small-scale private
-Symphony* overlay with NAT-constrained nodes.
+Brunet overlay with NAT-constrained nodes.
 
 The organization of this paper follows.  Section~\ref{background} overviews
 common P2P overlay technologies, motivating examples for this work, existing
 solutions to the bootstrapping problem, and NAT challenges in P2P systems.  In
 Section~\ref{overview}, we present a survey of overlays, applying the
 requirements for private overlay bootstrapping to them, and then show in detail
-how they can be applied to Symphony* and XMPP.  Our implementation is described in
+how they can be applied to Brunet and XMPP.  Our implementation is described in
 Section~\ref{implementation}.  In Section~\ref{evaluations}, we then perform a
 timing evaluation of bootstrapping overlays using our prototype PlanetLab and
 discuss experiences in deploying the system.  Finally, we conclude the paper
@@ -219,8 +219,8 @@ these systems.  In centralized VPNs like OpenVPN, a dedicated server provides
 for all three services.  P2P VPN solutions (such as Hamachi) provide similar
 VPN functionality, with the improvement that peers can form direct connections
 with each other which bypass the server.  A decentralized P2P VPN solution like
-Symphony*VPN~\cite{socialvpn} relies on a dedicated bootstrap overlay that runs
-on PlanetLab.  Using the techniques described in this paper, Symphony*VPN could
+BrunetVPN~\cite{socialvpn} relies on a dedicated bootstrap overlay that runs
+on PlanetLab.  Using the techniques described in this paper, BrunetVPN could
 be extended so that it can be bootstrapped into private systems without
 additional user configuration and relying on sustainable large-scale public
 overlays.
@@ -626,18 +626,18 @@ Because Pastry uses recursive routing, it can be used as a relay.  Furthermore,
 extensions to Pastry have enabled explicit relays called virtual
 connections~\cite{epost}.
 \\ \hline
-Symphony*~\cite{brunet} &
-Symphony* like OpenDHT is a freely available DHT running on PlanetLab, though
-still in active development.  Symphony* creates a Symphony~\cite{symphony} overlay
+Brunet~\cite{brunet} &
+Brunet like OpenDHT is a freely available DHT running on PlanetLab, though
+still in active development.  Brunet creates a Symphony~\cite{symphony} overlay
 using recursive routing.
 &
-Symphony* supports inherent reflection services, when a peer forms a connection
+Brunet supports inherent reflection services, when a peer forms a connection
 with a remote peer, the peers exchange their view of each other.
 &
 Peers can use the DHT as a rendezvous service, storing their connectivity
 information in the DHT at key location:  $hash(SERVICE)$.
 &
-Like Pastry, Symphony* supports recursive routing and relays called
+Like Pastry, Brunet supports recursive routing and relays called
 tunnels~\cite{hpdc08_0}.
 \\ \hline
 \end{tabular}
@@ -650,19 +650,19 @@ tunnels~\cite{hpdc08_0}.
 
 Table~\ref{tab:overlays} reviews various overlays, the majority of which are
 high availability, public, free-to-join overlays, though some research only
-overlays are included.  From this list, we chose to extend Symphony* and XMPP
-to support private overlay bootstrapping.  Symphony* provides a structured P2P
+overlays are included.  From this list, we chose to extend Brunet and XMPP
+to support private overlay bootstrapping.  Brunet provides a structured P2P
 infrastructure, though lacks an active, large-scale deployment outside of
 academic institutions due to being rooted in an academic project.  XMPP, on the
 other hand, enables connections between friends with routing occurring across a
 distributed overlay.
 
 Our implementation makes heavy use of the transports incorporated into
-Symphony*~\cite{brunet}.  The key distinguishing feature of this library is the
+Brunet~\cite{brunet}.  The key distinguishing feature of this library is the
 abstraction of sending over a communication link as it supports primitives
 similar to ``send'' and ``receive'' that enables the ability to create P2P
 communication channels over a variety of transports.  In the next sections, we
-will describe how we extended Symphony* to be self-bootstrapping as well as
+will describe how we extended Brunet to be self-bootstrapping as well as
 extensions to enable bootstrapping from XMPP.
 
 Our application of structured overlays as the basis private overlays focuses on
@@ -676,17 +676,17 @@ provides an inbox search system using Cassandra~\cite{cassandra} running on
 provide each member a unique identifier abstracted from the underlying network.
 As mentioned in the cited works, they provide high availability and autonomic
 features that can handle churn well.  When used in small networks, most
-structured overlays (including Symphony* and Pastry) in effect act as $O(1)$
+structured overlays (including Brunet and Pastry) in effect act as $O(1)$
 systems, self-organizing links that establish all-to-all connectivity among
-peers.  Symphony* explicitly supports all-to-all connectivity, though in some
+peers.  Brunet explicitly supports all-to-all connectivity, though in some
 cases may require constrained peers to route through relays.  This can further
 be ensured by setting the amount of near connections for the infrastructures,
-which in Symphony* is configurable at run time.
+which in Brunet is configurable at run time.
 
 The XMPP library we used is called Jabber-Net.  Each connection between peers
 is uniquely identified by employing socket like concepts, i.e., a pair of
 addresses and ports.  The basic representation for this constitutes a pair of
-identifiers of the form ``symphony*://P2P\_ID:PORT'', where each peer has a
+identifiers of the form ``brunet://P2P\_ID:PORT'', where each peer has a
 unique ID and port associated for the local and remote entity.  The XMPP
 implementation has a similar format: ``xmpp://USERNAME@DOMAIN:PORT/RESOURCE'',
 again one identifier for the local peer and one for the remote.
@@ -694,21 +694,21 @@ again one identifier for the local peer and one for the remote.
 \begin{figure*}[h!t!]
 \centering
 \epsfig{file=figs/bootstrap_brunet.eps, width=5.5in}
-\caption{Bootstrapping a P2P system using Symphony*.}
+\caption{Bootstrapping a P2P system using Brunet.}
 \label{fig:bootstrap_brunet}
 \end{figure*}
 
-\subsection{Bootstrapping Private Overlays Using Symphony*}
+\subsection{Bootstrapping Private Overlays Using Brunet}
 \label{brunet_bootstrapping}
 
-Prior to our work, Symphony* bootstrapped using a recently online cache of peers
-and IP multicast.  We have implemented Symphony* to support STUN, such that, with
-every connection Symphony* makes, peers inform each other of their view of the
+Prior to our work, Brunet bootstrapped using a recently online cache of peers
+and IP multicast.  We have implemented Brunet to support STUN, such that, with
+every connection Brunet makes, peers inform each other of their view of the
 remote peers network state, a form of passive \textbf{reflection}.  Peers also
 generate a unique 160-bit node identifier that can be used in the overlay as a
 directly receive packets regardless of the underlay conditions.
 
-In a single overlay, Symphony* supports \textbf{relaying} either through the
+In a single overlay, Brunet supports \textbf{relaying} either through the
 overlay or pseudo direct connections called ``Tunnels''~\cite{hpdc08_0}, where
 peers route to each other through common neighboring connections.  The relaying
 in this context is used either to maintain a necessary overlay connection, or
@@ -720,7 +720,7 @@ the issue of more restrictive cone NATs and the case when the peer is behind a
 non-traversable NAT.  
 
 To support \textbf{relaying} within the scope of a private overlay, we further
-extended Symphony*'s transport library to support treating an existing overlay
+extended Brunet's transport library to support treating an existing overlay
 as a medium for point-to-point communication. This is called a ``Subring''
 transport, because it supports the abstraction of multiple private sub-rings
 within a common large structured ring.  When the private overlay transmits data
@@ -729,12 +729,12 @@ possibly encrypted) in a packet that ensures it will be delivered to the
 correct private destination, and then encapsulated into a greedy routing
 packet.  At which point, the packet is sent to the remote peer through the
 public overlay.  In order to instruct peers to establish ``Subring'' links,
-they exchange an identifier of the form ``symphony*://P2P\_ID''.
+they exchange an identifier of the form ``brunet://P2P\_ID''.
 
 Peers store their ``Subring'' identifiers into the DHT for \textbf{rendezvous}.
 The DHT provides a scalable and self-maintaining mechanism for maintaining a
 bootstrap, so long as the DHT supports multiple values at the same key, as
-Symphony* does.  The key used for the DHT rendezvous is a hash of the services
+Brunet does.  The key used for the DHT rendezvous is a hash of the services
 name and its version number, which we call a namespace.  Peers can then query
 this entry in the DHT to obtain a list of peers in the private overlay.  Since
 DHTs are soft-state, or lease systems, where data is released after a certain
@@ -742,9 +742,9 @@ period of time, an online peer must actively maintain its DHT entry.  In the
 case that a peer goes offline, the DHT will automatically remove the value
 after its lease has expired.
 
-The final challenge faced was the application of Symphony*'s reflection service
+The final challenge faced was the application of Brunet's reflection service
 for the private overlay.  There were two directions we could have gone.  The
-first would have been to extend Symphony* to support STUN in each of the remote
+first would have been to extend Brunet to support STUN in each of the remote
 servers and then have a private node query them for their public information.
 The problem with this approach is that it would require maintaining additional
 state in order to discern which of the remote peers are on public addresses and
@@ -762,7 +762,7 @@ path will signify a unique overlay.
 
 Our completed approach is illustrated in Figure~\ref{fig:bootstrap_brunet}.
 The approach of ``Subring'' and ``Pathing'' enabled the reuse of the core
-components of Symphony*.  Using ``Subring'' enables peers to form bootstrap
+components of Brunet.  Using ``Subring'' enables peers to form bootstrap
 connections to then exchange ``ConnectToMe'' messages.  If the direct
 connections failed, then the ``Subring'' connections could be used as permanent
 connections.  The use of ``Pathing'' meant reuse of existing NAT traversal
@@ -805,7 +805,7 @@ The first form of \textbf{reflection} in XMPP is the unique client identifier.
 Another is an IP reflection service available from some XMPP service providers
 called ``Jingle''~\cite{jingle}.  ``Jingle'' uses ``IQ'' to determine available
 STUN and TURN servers.  Fortunately, these services are provided free of charge
-through GoogleTalk.  In Symphony*, we extended the UDP transport to support
+through GoogleTalk.  In Brunet, we extended the UDP transport to support
 querying STUN servers so that it can obtain an address mapping and keep it
 open.  STUNs protocol sets the first two bits to 0 in all messages, thus we
 used that and the STUN cookie to distinguish it from other messages.
@@ -817,7 +817,7 @@ they are then able to attempt simultaneous connection attempts, in the same
 fashion as the ``Subring'' transport, further increasing the likelihood of a
 connection.  If that does not succeed, the peers can still relay through XMPP.
 This approach also has the benefit that, if a XMPP server does not support
-``Jingle'', the two peers can still form links with each other.  Since Symphony*
+``Jingle'', the two peers can still form links with each other.  Since Brunet
 internally supports IP reflection, eventually, if one of the peers in the system
 has a public address, it will automatically assist the other peers into forming
 direct links with each other.
@@ -841,7 +841,7 @@ address through STUN, then form an XMPP connection with each other, and finally
 perform simultaneous connection attempts.  If NAT traversal fails, the peers
 can continue routing through the XMPP connection.  Due to the abstractions
 employed by the transport library, the additional support for XMPP-based
-bootstrapping required only an additional 700 lines of code to Symphony* and no
+bootstrapping required only an additional 700 lines of code to Brunet and no
 modification to the core system.
 
 \section{Evaluating Overlay Bootstrapping}
@@ -853,17 +853,17 @@ deploying overlays.
 \subsection{Deployment Experiments}
 
 The purpose of our experiment is to verify that our techniques work and what
-overheads should be expected in using Symphony* and XMPP to bootstrap an
+overheads should be expected in using Brunet and XMPP to bootstrap an
 overlay.  Rather than an extensive experiment overly focused on overheads of
-Symphony* and XMPP, this experiment is primarily focused on the feasibility of
+Brunet and XMPP, this experiment is primarily focused on the feasibility of
 forming small-scale overlays among network-constrained peers.  The experiment
 represents 5 peers desiring all-to-all direct connectivity, a feature
-transparently available to them if they bootstrap into a private Symphony*
+transparently available to them if they bootstrap into a private Brunet
 overlay. The experiments were run on peers deployed on 5 distinct virtual
 machines --- each virtual machine had its own separate NAT, and thus peers were
 unable to communicate directly without assistance.
 
-The public Symphony* overlay used in this experiment consisted of over 600 nodes
+The public Brunet overlay used in this experiment consisted of over 600 nodes
 and ran on PlanetLab.  PlanetLab~\cite{planetlab} is a consortium of research
 institutes sharing hundreds of globally distributed network and computing
 resources.  GoogleTalk provided the XMPP overlay used in this experiment.
@@ -877,12 +877,12 @@ are presented in Table~\ref{tab:results}.  For XMPP, these are translated as
 follows:  reflection measures the time to obtain IP addresses from the STUN
 server, rendezvous is the time to receive a presence notification, relaying is
 the time to receive a message across XMPP, and connected is once all nodes in
-the private overlay has all-to-all connectivity.  For Symphony*, these are
+the private overlay has all-to-all connectivity.  For Brunet, these are
 translated as follows:  reflection measures the time to connect to the public
 overlay, rendezvous is the time to query the DHT, relaying is the average time
 to send a message across the overlay, and connected is the time until the
 private overlay has all-to-all connectivity.    The results are highly
-correlated to timeouts in Symphony*, which employs a mixture of events and
+correlated to timeouts in Brunet, which employs a mixture of events and
 polling to stabilize the overlay, as well as the latency between the client and
 GoogleTalk.  As this was more of a qualitative experiment, the results are
 clear: private overlays providing all-to-all connectivity among NATed nodes can
@@ -893,7 +893,7 @@ bootstrap within a very reasonable amount of time.
 \begin{tabular}{|c||c|c|c|c|}
 \hline & Reflection & Rendezvous & Relaying & Connected \\ \hline \hline
 XMPP & .035 & .110 & .243 & 20.3 \\ \hline
-Symphony* & 3.05 & .330 & .533 & 23.22 \\ \hline
+Brunet & 3.05 & .330 & .533 & 23.22 \\ \hline
 \end{tabular}
 \caption{Time in seconds for various private overlay operations}
 \label{tab:results}
@@ -917,7 +917,7 @@ associated with the Federation will not necessarily support features necessary
 to bootstrap.
 
 During initial tests in verifying the workings of the XMPP code base, we
-bootstrapped a  private Symphony* overlay on PlanetLab through various XMPP
+bootstrapped a  private Brunet overlay on PlanetLab through various XMPP
 service providers.  We discovered that some servers were ignoring clients on
 PlanetLab.  Another server crashed after 257 concurrent instances of the same
 account logged in.  Unfortunately, the provider had no contact information
@@ -961,10 +961,10 @@ attempts fail.  Rendezvous is a common problem, even for large-scale systems;
 peers must have a mechanism to find other peers connecting to are are in the
 same overlay.  
 
-We extended Symphony* to support bootstrapping small-scale overlays from
-another Symphony* overlay as well as XMPP.  XMPP was chosen as readily
+We extended Brunet to support bootstrapping small-scale overlays from
+another Brunet overlay as well as XMPP.  XMPP was chosen as readily
 supported the key features required for bootstrapping small-scale P2P overlays.
-The Symphony* solution offers interesting insights. In particular, we have
+The Brunet solution offers interesting insights. In particular, we have
 found that the ability to multiplex a single socket or transport for multiple
 overlays is important in practice for overlays that use UDP as a transport and
 support NAT traversal, because a peer does not need to actively maintain
