@@ -7,23 +7,23 @@
 \usepackage{array}
 \usepackage{footnote}
 
-%\setlength{\parskip}{0pt}
-%\setlength{\parsep}{0pt}
-%\setlength{\headsep}{0pt}
-%\setlength{\topskip}{0pt}
-%\setlength{\topmargin}{0pt}
-%\setlength{\footskip}{0pt}
+\setlength{\parskip}{0pt}
+\setlength{\parsep}{0pt}
+\setlength{\headsep}{0pt}
+\setlength{\topskip}{0pt}
+\setlength{\topmargin}{0pt}
+\setlength{\footskip}{0pt}
 
-%\setlength{\topsep}{2pt}
-%\setlength{\partopsep}{0pt}
-%\setlength{\itemsep}{0pt}
+\setlength{\topsep}{2pt}
+\setlength{\partopsep}{0pt}
+\setlength{\itemsep}{0pt}
 
-%\setlength{\floatsep}{4pt}
-%\setlength{\dblfloatsep}{4pt}
-%\setlength{\textfloatsep}{4pt}
-%\setlength{\dbltextfloatsep}{4pt}
-%\setlength{\abovecaptionskip}{4pt}
-%\setlength{\intextsep}{2pt}
+\setlength{\floatsep}{4pt}
+\setlength{\dblfloatsep}{4pt}
+\setlength{\textfloatsep}{4pt}
+\setlength{\dbltextfloatsep}{4pt}
+\setlength{\abovecaptionskip}{4pt}
+\setlength{\intextsep}{2pt}
 
 \widowpenalty=10000
 \clubpenalty=10000
@@ -171,11 +171,11 @@ a direct IP link is unavailable.
 \item \textbf{Rendezvous} - A method for identifying peers interested in the
 same P2P service.
 \end{enumerate}
-This work motivates from the belief that what prevents use of small-scale P2P
-systems is due to lack the resources, technical knowledge, and lack of ability
-and desire to create and manage high availability bootstrap services.  A public
-overlay can be used to transparently bootstrap a private overlay with minimal
-user interaction.
+This work motivates from the belief that while small-scale P2P systems are
+attractive for decentralized systems, the overheads relating to creating and
+maintaining bootstrap services make them unfeasible.  A public overlay can be
+used to transparently bootstrap a private overlay with minimal user
+interaction.
 
 The requirements are presented and verified in the context of two prototype
 implementations: a XMPP (Jabber)~\cite{xmpp} and Brunet~\cite{brunet}.
@@ -219,11 +219,10 @@ these systems.  In centralized VPNs like OpenVPN, a dedicated server provides
 for all three services.  P2P VPN solutions (such as Hamachi) provide similar
 VPN functionality, with the improvement that peers can form direct connections
 with each other which bypass the server.  A decentralized P2P VPN solution like
-BrunetVPN~\cite{socialvpn} relies on a dedicated bootstrap overlay that runs
-on PlanetLab.  Using the techniques described in this paper, BrunetVPN could
-be extended so that it can be bootstrapped into private systems without
-additional user configuration and relying on sustainable large-scale public
-overlays.
+SocialVPN~\cite{socialvpn} relies on a dedicated bootstrap overlay that runs on
+PlanetLab.  Using the techniques described in this paper, SocialVPN could be
+extended so that it can be bootstrapped into private systems without additional
+user configuration and relying on sustainable large-scale public overlays.
 
 Large-scale decentralized P2P architectures that can assist with the bootstrap
 problem are unstructured and structured systems.  Unstructured
@@ -252,7 +251,7 @@ support trackerless torrents through using a DHT.
 
 \begin{figure*}[h!t!]
 \centering
-\epsfig{file=figs/NAT.eps, width=5.5in}
+\epsfig{file=figs/NAT.eps, width=5in}
 \caption{A typical NAT interaction. The peer behind a NAT has a private address.
 When the packet is sent through the NAT, the NAT translates the source information
 into a public mapping, keeping the original source information so that if a
@@ -383,13 +382,13 @@ thus only a machine receiving a message from an internal host can send a
 message back.
 \end{itemize}
 
-Because of the nature of NATs, two peers behind NATs will not be able to
-communicate directly without each other without assistance.
-Section~\ref{reflection} describes techniques that enable peers to acquire
-routable addresses, Section~\ref{relay} describes relaying solutions, the
-alternative when two peers are unable to communicate directly, and
-Section~\ref{rendezvous} describes mechanisms for peers to identify each other
-to exchange address and relaying information.
+Two peers behind NATs will be unable to directly communicate with each other
+without assistance in acquiring routable addresses.  Section~\ref{reflection}
+describes techniques that enable peers to acquire routable addresses,
+Section~\ref{relay} describes relaying solutions, the alternative when two
+peers are unable to communicate directly, and Section~\ref{rendezvous}
+describes mechanisms for peers to identify each other to exchange address and
+relaying information.
 
 \section{Core Requirements}
 \label{overview}
@@ -514,10 +513,9 @@ use of a broadcast query to determine if any other peers are using the same
 service.  In small enough overlays, this is a perfectly reasonable approach,
 though in large scale systems such as Gnutella, the approach is not scalable.
 
-There is not one unified method to consolidate rendezvous as doing such would
-severely limit its capabilities.  Programming rendezvous using the unique
-features of an overlay can enable more efficient forms of rendezvous enabling
-peers to increase the likelihood of finding a mutual peer and doing so more
+Rather than attempt to make a single unified rendezvous technique, using a
+unique approach for each overlay can enable more efficient forms of rendezvous
+increasing the likelihood of peers to find a mutual peer and doing so more
 quickly.  For example, in the case of a DHT, peers can use a single DHT key to
 store multiple values, all of which would be addresses used to communicate with
 peers in the overlay.  Alternatively, in a system like BitTorrent, peers could
@@ -825,7 +823,7 @@ direct links with each other.
 \textbf{Rendezvous} uses a two step approach.  First peers advertise their use
 of private overlay in the resource identifier.  The name is hashed to ensure
 that the users complete identifier does not extend past 1,023 bytes, the
-maximum length for these identifiers.  In addition, a cryptographyically
+maximum length for these identifiers.  In addition, a cryptographically
 generated random number is appended to the resource identifier to distinguish
 between multiple instances of the users application in the same private
 overlay.  Once a peer receives a presence notification from a remote peer and
@@ -958,30 +956,37 @@ required so that peers behind NATs and firewalls can obtain public addresses to
 share with remote peers.  Relaying provides a means for peers to coordinate
 simultaneous connection attempts and a fall-back in the case that NAT traversal
 attempts fail.  Rendezvous is a common problem, even for large-scale systems;
-peers must have a mechanism to find other peers connecting to are are in the
-same overlay.  
+peers must have a mechanism to find other peers connecting to are in the same
+overlay.  
 
-We extended Brunet to support bootstrapping small-scale overlays from
-another Brunet overlay as well as XMPP.  XMPP was chosen as readily
-supported the key features required for bootstrapping small-scale P2P overlays.
-The Brunet solution offers interesting insights. In particular, we have
-found that the ability to multiplex a single socket or transport for multiple
-overlays is important in practice for overlays that use UDP as a transport and
-support NAT traversal, because a peer does not need to actively maintain
-multiple NAT mappings.  XMPP provides a reliable, production ready, mechanism
-of bootstrapping overlays as the service is hosted by a distributed set of
-providers, each offering interoperability.  Our prototype clearly identifies
-methods for reflection, relaying, and rendezvous and can assist in discovering
-methods for doing so in similar systems.
+We extended Brunet to support bootstrapping small-scale overlays from another
+Brunet overlay as well as XMPP.  XMPP is an ideal choice as it already supports
+the key features required for bootstrapping small-scale P2P overlays.  The
+Brunet solution offers interesting insights. In particular, we have found that
+the ability to multiplex a single socket or transport for multiple overlays
+enables overlays that use UDP as a transport with NAT traversal support to
+leverage NAT traversal in one domains in all domains, i.e., the peer does not
+need to maintain unique NAT mappings for each overlay.  XMPP provides a
+reliable, production ready, mechanism of bootstrapping overlays as the service
+is hosted by a distributed set of providers, each offering interoperability.
+Our prototype clearly identifies methods for reflection, relaying, and
+rendezvous and can assist in discovering methods for doing so in similar
+systems.
 
 For future work, we plan on investigating how peers can leverage existing DHT
 deployments, such as Kad or Mojito, for rendezvous, form friendships
 automatically in XMPP, and continue the bootstrap process using XMPP framework
-discussed in this paper.  Using this pproach would enable the XMPP solution to
+discussed in this paper.  Using this approach would enable the XMPP solution to
 be extended to bootstrap overlays that are not based on social connections
 alone.
 
-%\section*{Acknowledgment}
+\section{Acknowledgment}
+
+We thank the anonymous reviewers for their useful comments and feedback.  This
+work is sponsored by the National Science Foundation under awards 0751112 and
+0721867. Any opinions, findings and conclusions or recommendations expressed in
+this material are those of the authors and do not necessarily reflect the views
+of the NSF.
 
 \bibliographystyle{IEEEtran}
 \bibliography{VirtualPrivateOverlays}
